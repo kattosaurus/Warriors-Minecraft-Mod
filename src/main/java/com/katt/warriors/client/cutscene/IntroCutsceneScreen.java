@@ -37,20 +37,6 @@ import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Full-screen, input-swallowing cutscene player.
- *
- * <p>The scene starts on a black screen, plays the monologue in the void,
- * blacks out, lights a candle and reveals the cat, then plays the dialogue and
- * fades out. Every line types in and then stays on screen until the player
- * clicks; ambient animation keeps running while the script waits.</p>
- *
- * <p>Once the last dialogue line hands over to the rebirth flow, the choice
- * menus render <em>inside</em> this screen, on top of the still-playing scene
- * (stars, candle, cat), instead of replacing the cutscene with an outside screen.
- * The choices are presented as dark option cards with the description
- * inside each card.</p>
- */
 public class IntroCutsceneScreen extends Screen {
 
     private record Cue(float time, SoundEvent sound, float pitch, float volume) {}
@@ -68,7 +54,6 @@ public class IntroCutsceneScreen extends Screen {
             new Cue(CutsceneScript.END_FADE_START, SoundEvents.CANDLE_EXTINGUISH, 0.9F, 0.45F)
     );
 
-    /** Monologue and dialogue in playback order, used to stop on every line. */
     private static final List<CutsceneScript.Line> LINES = buildLineSequence();
 
     private static List<CutsceneScript.Line> buildLineSequence() {
@@ -97,41 +82,24 @@ public class IntroCutsceneScreen extends Screen {
     private static final int HOVER_TINT   = 0x1FFFFFFF;
     private static final int SELECT_TINT  = 0x33C8A86A;
 
-    /**
-     * GUI depth layers. The cat model is drawn at z = 50 and the scene frame
-     * (vignette, dialogue shading, letterbox bars) at z = 300. The GUI uses a
-     * depth test, so anything the menus draw at z = 0 afterwards is hidden
-     * wherever those layers already wrote depth. The menus therefore live on
-     * their own layers above everything else.
-     */
     private static final float MENU_DIM_Z = 100.0F;
     private static final float MENU_Z = 500.0F;
 
-    // ── Ending sequence (seconds since the last choice was confirmed) ─────────
-
-    /** The scene fades to black. */
     private static final float ENDING_FADE = 2.8F;
-    /** The arrival line fades in over the black. */
     private static final float ENDING_TEXT_IN = 2.4F;
-    /** The choices are sent while the screen is black and the line is showing. */
     private static final float ENDING_SEND = 5.4F;
     private static final float ENDING_TEXT_OUT = 6.6F;
-    /** The black fades away, revealing the world (or the loading screen). */
     private static final float ENDING_REVEAL_START = 7.4F;
     private static final float ENDING_CLOSE = 9.0F;
 
-    /** Aspect ratio of the customize preview panel (width / height). */
     private static final float CLOUD_ASPECT = 1.5F;
 
     private final IntroSceneRenderer scene = new IntroSceneRenderer();
 
     private long lastFrameNanos = System.nanoTime();
 
-    /** Timeline used for scene beats and intro line visibility; pauses on each line. */
     private float time;
-    /** Clock for the dialogue lines played between the choice menus. */
     private float rebirthTime;
-    /** Always-advancing clock for idle animation (stars, flame, cat breathing). */
     private float animationTime;
 
     private int nextCue;
@@ -141,8 +109,6 @@ public class IntroCutsceneScreen extends Screen {
     private boolean waitingForClick;
     private boolean finished;
     private ResourceKey<Level> dimension;
-
-    // ── Rebirth choice flow (rendered inside the cutscene) ────────────────────
 
     private enum Stage {
         MODE,
@@ -165,25 +131,20 @@ public class IntroCutsceneScreen extends Screen {
     private final List<Option> options = new ArrayList<>();
     private final List<Swatch> swatches = new ArrayList<>();
 
-    /** Null while the scripted intro dialogue is playing; the menus take over after. */
     private Stage stage = null;
 
     private RebirthChoice.Mode mode = RebirthChoice.Mode.REALISTIC;
     private RebirthChoice.Appearance appearance = RebirthChoice.Appearance.REALISTIC;
     private RebirthChoice.Clan clan = RebirthChoice.Clan.THUNDERCLAN;
 
-    // "Customize Clans": the working copy, the slot being edited and the name box.
     private ClanConfig clanDraft = ClanConfig.defaults();
     private int editSlot;
     private boolean nameFocused;
 
     private String pelt;
-    /** Coat pattern name, or null for a solid coat. */
     private String pattern;
     private RebirthChoice.Age age = RebirthChoice.Age.ADULT;
 
-    // The warrior name: what is typed in the prefix and suffix boxes, and which box has focus
-    // (0 none, 1 prefix, 2 suffix).
     private String namePrefix = "";
     private String nameSuffix = "";
     private int nameFocus;
@@ -196,7 +157,6 @@ public class IntroCutsceneScreen extends Screen {
     private boolean ending;
     private float endingTime;
 
-    /** Scripted rebirth lines waiting to play, in order. */
     private final List<RebirthLine> rebirthLines = new ArrayList<>();
     private int rebirthIndex;
     private Runnable rebirthAdvance;
@@ -206,8 +166,6 @@ public class IntroCutsceneScreen extends Screen {
     public IntroCutsceneScreen() {
         super(Component.translatable(CutsceneScript.TITLE_KEY));
     }
-
-    // ── Screen lifecycle ─────────────────────────────────────────────────────
 
     @Override
     protected void init() {
@@ -224,7 +182,6 @@ public class IntroCutsceneScreen extends Screen {
 
     @Override
     public void removed() {
-        // Called when the screen is replaced or the level unloads.
         if (!this.finished) {
             this.finished = true;
             this.sendFinished();
@@ -236,14 +193,10 @@ public class IntroCutsceneScreen extends Screen {
         this.finishAndClose();
     }
 
-    // ── Rendering ────────────────────────────────────────────────────────────
-
     @Override
     public void render(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
         this.renderContents(gfx, mouseX, mouseY);
 
-        // The real cursor is hidden for the cutscene, so draw our own on top of
-        // everything (but not during the closing fade, when nothing is clickable).
         if (!this.ending && !this.finished && Minecraft.getInstance().screen == this) {
             this.renderCursor(gfx, mouseX, mouseY);
         }
@@ -254,15 +207,9 @@ public class IntroCutsceneScreen extends Screen {
     private static final ResourceLocation CURSOR_HOVER =
             new ResourceLocation(Warriors.MODID, "textures/gui/cursor_hover.png");
 
-    /** Size of the cursor textures in pixels (they are 16 × 16). */
     private static final int CURSOR_TEXELS = 16;
-    /** Each texel is drawn this many real screen pixels wide. */
     private static final float CURSOR_PIXEL_SCALE = 2.0F;
 
-    /**
-     * An arrow normally, a gold paw while the pointer is over something that
-     * can be clicked. The arrow's tip is its hot spot; the paw is centred on it.
-     */
     private void renderCursor(GuiGraphics gfx, int mouseX, int mouseY) {
         Minecraft mc = Minecraft.getInstance();
         com.mojang.blaze3d.platform.Window window = mc.getWindow();
@@ -283,8 +230,6 @@ public class IntroCutsceneScreen extends Screen {
             }
         }
 
-        // Exact pointer position (not rounded to a GUI pixel), snapped to a real
-        // screen pixel so the texture stays sharp.
         double guiScale = window.getGuiScale();
         double px = mc.mouseHandler.xpos() * window.getGuiScaledWidth() / window.getScreenWidth();
         double py = mc.mouseHandler.ypos() * window.getGuiScaledHeight() / window.getScreenHeight();
@@ -351,11 +296,6 @@ public class IntroCutsceneScreen extends Screen {
         }
 
         if (this.stage != null) {
-            // The rebirth choices are part of the cutscene: they are drawn over the
-            // still-running scene (void, candle, cat) instead of popping in as a
-            // screen of their own.
-            // The cat model writes a deep depth range; wipe it so everything the
-            // menus draw from here on always lands on top of the scene.
             clearDepth(gfx);
 
             gfx.pose().pushPose();
@@ -364,8 +304,6 @@ public class IntroCutsceneScreen extends Screen {
             gfx.flush();
             gfx.pose().popPose();
 
-            // Menus, descriptions and reaction lines go above the cat, the
-            // vignette and the letterbox bars so nothing hides behind them.
             gfx.pose().pushPose();
             gfx.pose().translate(0.0F, 0.0F, MENU_Z);
             if (this.rebirthActive != null) {
@@ -379,8 +317,6 @@ public class IntroCutsceneScreen extends Screen {
             this.scene.renderForeground(gfx, this.time, this.width, this.height, playerName);
         }
     }
-
-    // ── Rebirth menus ─────────────────────────────────────────────────────────
 
     private void renderRebirthMenu(GuiGraphics gfx, int mouseX, int mouseY) {
         this.options.clear();
@@ -469,14 +405,10 @@ public class IntroCutsceneScreen extends Screen {
                 Component.translatable("warriors.rebirth.clan.customize"), this::openClanEditor);
     }
 
-    // ── Warrior name ──────────────────────────────────────────────────────────
-
-    /** The suffix the chosen age is tied to (kit / paw), or null for adults, who pick their own. */
     private String fixedNameSuffix() {
         return ClanCatNames.fixedSuffix(this.age);
     }
 
-    /** Opens the name step with a random name already filled in, so it can be accepted as is. */
     private void openNameStage() {
         this.rollName();
         this.stage = Stage.NAME;
@@ -500,7 +432,6 @@ public class IntroCutsceneScreen extends Screen {
         this.stage = Stage.CLAN;
     }
 
-    /** The name as it will be written, with ? for a part that is still empty. */
     private String previewName() {
         String prefix = ClanCatNames.cleanPrefix(this.namePrefix);
         String fixed = this.fixedNameSuffix();
@@ -518,7 +449,6 @@ public class IntroCutsceneScreen extends Screen {
         int x0 = (this.width - panelW) / 2;
         int y = bar + 46;
 
-        // The finished name.
         gfx.drawCenteredString(this.font, Component.literal(this.previewName()),
                 this.width / 2, y, ACCENT);
         y += 20;
@@ -533,7 +463,6 @@ public class IntroCutsceneScreen extends Screen {
                 x0, y, MUTED, false);
         y += 11;
         if (fixed != null) {
-            // Kits and adolescents have their suffix decided by their age.
             gfx.fill(x0, y, x0 + panelW, y + 16, CARD_BG);
             drawPanelBorder(gfx, x0, y, panelW, 16, BORDER);
             gfx.drawString(this.font, fixed, x0 + 5, y + 4, MUTED, false);
@@ -550,7 +479,6 @@ public class IntroCutsceneScreen extends Screen {
                 Component.translatable("warriors.rebirth.name.confirm"), this::confirmName);
     }
 
-    /** One of the name boxes: shows a faint "random" while empty and unfocused. */
     private void drawNameInput(GuiGraphics gfx, int x, int y, int w, int h, String text, int index) {
         boolean focused = this.nameFocus == index;
         gfx.fill(x, y, x + w, y + h, CARD_BG);
@@ -570,7 +498,6 @@ public class IntroCutsceneScreen extends Screen {
         this.options.add(new Option(x, y, w, h, null, null, () -> this.nameFocus = index));
     }
 
-    /** Adds typed letters to the focused name box (letters only, with a length limit). */
     private void typeIntoName(String typed) {
         boolean prefix = this.nameFocus == 1;
         StringBuilder text = new StringBuilder(prefix ? this.namePrefix : this.nameSuffix);
@@ -619,8 +546,6 @@ public class IntroCutsceneScreen extends Screen {
         }
     }
 
-    // ── Customize Clans ───────────────────────────────────────────────────────
-
     private void openClanEditor() {
         this.clanDraft = ClientClanConfig.config().copy();
         this.editSlot = this.clanDraft.firstEnabled().ordinal();
@@ -628,7 +553,6 @@ public class IntroCutsceneScreen extends Screen {
         this.stage = Stage.CLAN_EDIT;
     }
 
-    /** Leaves the editor, sending the changes to the server if there are any. */
     private void closeClanEditor() {
         this.nameFocused = false;
         if (ClientClanConfig.canEdit()
@@ -665,7 +589,6 @@ public class IntroCutsceneScreen extends Screen {
         int detailX = x0 + listW + 12;
         int detailW = panelW - listW - 12;
 
-        // How many clans there are.
         Component countLabel = Component.translatable("warriors.clans.count", config.enabledCount());
         gfx.drawString(this.font, countLabel, x0, top + 3, TEXT, false);
         int stepX = x0 + this.font.width(countLabel) + 8;
@@ -674,7 +597,6 @@ public class IntroCutsceneScreen extends Screen {
         drawSmallButton(gfx, mouseX, mouseY, stepX + 18, top, 14, 14, Component.literal("+"),
                 edit && config.enabledCount() < all.length, config::addClan);
 
-        // The clans.
         int listTop = top + 22;
         int rowH = 18;
         for (int i = 0; i < all.length; i++) {
@@ -693,7 +615,6 @@ public class IntroCutsceneScreen extends Screen {
             gfx.fill(x0 + 1, ry + 1, x0 + 4, ry + rowH - 1,
                     0xFF000000 | ClanConfig.PALETTE[slot.colour]);
 
-            // Checkbox: does this clan exist?
             int boxX = x0 + 9;
             int boxY = ry + 4;
             gfx.fill(boxX, boxY, boxX + 10, boxY + 10, VEIL);
@@ -728,7 +649,6 @@ public class IntroCutsceneScreen extends Screen {
                     x0 + listW - terrainW - 6, ry + 5, MUTED, false);
         }
 
-        // The selected clan.
         ClanConfig.Slot slot = config.slot(this.editSlot);
         RebirthChoice.Clan clan = all[this.editSlot];
         int y = top;
@@ -791,7 +711,6 @@ public class IntroCutsceneScreen extends Screen {
             }
         }
 
-        // Bottom buttons.
         int buttonY = this.height - bar - 30;
         if (edit) {
             addButton(gfx, mouseX, mouseY, this.width / 2 - 112, buttonY, 104, 16,
@@ -804,7 +723,6 @@ public class IntroCutsceneScreen extends Screen {
                 Component.translatable("warriors.clans.done"), this::closeClanEditor);
     }
 
-    /** A small square button that can be switched off. */
     private void drawSmallButton(GuiGraphics gfx, int mouseX, int mouseY, int x, int y,
                                  int w, int h, Component label, boolean active, Runnable action) {
         boolean hovered = active && inside(mouseX, mouseY, x, y, w, h);
@@ -820,7 +738,6 @@ public class IntroCutsceneScreen extends Screen {
         }
     }
 
-    /** A labelled button that shows whether it is the current choice. */
     private void drawToggleButton(GuiGraphics gfx, int mouseX, int mouseY, int x, int y,
                                   int w, int h, Component label, boolean selected,
                                   boolean active, Runnable action) {
@@ -839,7 +756,6 @@ public class IntroCutsceneScreen extends Screen {
         }
     }
 
-    /** The clan name box: shows the default name faintly until something is typed. */
     private void drawNameField(GuiGraphics gfx, int x, int y, int w, int h,
                                ClanConfig.Slot slot, RebirthChoice.Clan clan, boolean edit) {
         boolean focused = this.nameFocused && edit;
@@ -900,18 +816,11 @@ public class IntroCutsceneScreen extends Screen {
         }
     }
 
-    // ── Option cards ──────────────────────────────────────────────────────────
-
-    /**
-     * Lays the choices out as dark cards: a title, a thin divider and the
-     * description inside the card itself, so nothing needs hovering to be read.
-     */
     private void renderCardChoices(GuiGraphics gfx, int mouseX, int mouseY,
                                    List<Choice> choices) {
         renderCardChoices(gfx, mouseX, mouseY, choices, 0);
     }
 
-    /** Same, leaving {@code reserve} pixels free above the hint for extra controls. */
     private void renderCardChoices(GuiGraphics gfx, int mouseX, int mouseY,
                                    List<Choice> choices, int reserve) {
         int count = choices.size();
@@ -974,7 +883,6 @@ public class IntroCutsceneScreen extends Screen {
         drawMenuHint(gfx);
     }
 
-    /** Tallest card needed to hold every choice's title and description at this width. */
     private int cardHeight(List<Choice> choices, int cardW) {
         int innerW = Math.max(40, cardW - CARD_PAD * 2);
         int tallest = 0;
@@ -1028,8 +936,6 @@ public class IntroCutsceneScreen extends Screen {
                 this.width / 2, hintY(), MUTED);
     }
 
-    // ── Customization ─────────────────────────────────────────────────────────
-
     private void renderCustomize(GuiGraphics gfx, int mouseX, int mouseY) {
         int bar = IntroSceneRenderer.barHeight(this.height);
         drawTitle(gfx, Component.translatable("warriors.rebirth.customize.title"), bar + 10);
@@ -1042,7 +948,6 @@ public class IntroCutsceneScreen extends Screen {
         int contentX = (this.width - contentW) / 2;
 
         int previewH = Mth.clamp((int) ((bottom - top) * 0.62F), 70, 190);
-        // Wide enough for the whole (long, low) cat, but always leave room for the swatches.
         int previewW = Math.min(Math.round(previewH * CLOUD_ASPECT), contentW - 150);
 
         gfx.fill(contentX, top, contentX + previewW, top + previewH, CARD_BG);
@@ -1102,7 +1007,6 @@ public class IntroCutsceneScreen extends Screen {
                 this::startFinalAppearanceExchange);
     }
 
-    /** A row of buttons: "Solid" plus every coat pattern. Returns the next free y. */
     private int drawPatternSection(GuiGraphics gfx, int mouseX, int mouseY,
                                    int x, int width, int y) {
         gfx.drawString(this.font,
@@ -1199,8 +1103,6 @@ public class IntroCutsceneScreen extends Screen {
         return chipY + rows * (chipSize + gap) + 5;
     }
 
-    // ── Rebirth dialogue line ─────────────────────────────────────────────────
-
     private void renderRebirthLine(GuiGraphics gfx) {
         if (this.rebirthActive == null) {
             return;
@@ -1231,8 +1133,6 @@ public class IntroCutsceneScreen extends Screen {
                 withAlpha(base, alpha));
     }
 
-    // ── Small widgets ─────────────────────────────────────────────────────────
-
     private void drawTitle(GuiGraphics gfx, Component text, int y) {
         drawCentered(gfx, text, y, TEXT);
     }
@@ -1245,7 +1145,6 @@ public class IntroCutsceneScreen extends Screen {
         gfx.drawCenteredString(this.font, text, this.width / 2, y, colour);
     }
 
-    /** Draws a wrapped line (from {@link net.minecraft.client.gui.Font#split}) centred. */
     private void drawCenteredSequence(GuiGraphics gfx, FormattedCharSequence text,
                                       int centerX, int y, int colour) {
         gfx.drawString(this.font, text, centerX - this.font.width(text) / 2, y, colour, false);
@@ -1287,8 +1186,6 @@ public class IntroCutsceneScreen extends Screen {
         return value == -1 ? fallback : 0xFF000000 | (value & 0xFFFFFF);
     }
 
-    // ── Rebirth flow transitions ──────────────────────────────────────────────
-
     private void chooseMode(RebirthChoice.Mode chosen) {
         this.mode = chosen;
         String key = chosen == RebirthChoice.Mode.REALISTIC
@@ -1304,12 +1201,10 @@ public class IntroCutsceneScreen extends Screen {
         this.appearance = chosen;
 
         if (chosen == RebirthChoice.Appearance.CUSTOM) {
-            // Start the menu with a complete look so every swatch has a value.
             if (this.pelt == null || this.leftEye == null) {
                 this.randomise();
             }
 
-            // The cat agrees, and the customization menu opens.
             startRebirthExchange(List.of(
                             playerLine(CutsceneScript.LINE_CUSTOM,
                                     Component.translatable(CutsceneScript.LINE_CUSTOM).getString()),
@@ -1319,7 +1214,6 @@ public class IntroCutsceneScreen extends Screen {
             return;
         }
 
-        // "Randomized": born however fate decides, then the cat reacts.
         if (chosen == RebirthChoice.Appearance.STYLIZED) {
             StylizedAppearance.Result look = StylizedAppearance.PRESET;
             this.pelt = look.peltColor();
@@ -1381,7 +1275,6 @@ public class IntroCutsceneScreen extends Screen {
                 this::completeRebirth);
     }
 
-    /** Called when the last exchange is over: plays the ending instead of cutting away. */
     private void completeRebirth() {
         if (this.ending) {
             return;
@@ -1395,7 +1288,6 @@ public class IntroCutsceneScreen extends Screen {
                 SimpleSoundInstance.forUI(SoundEvents.CANDLE_EXTINGUISH, 0.9F, 0.5F));
     }
 
-    /** Flushes pending draws and clears the depth buffer (the cat leaves deep depth values). */
     private static void clearDepth(GuiGraphics gfx) {
         gfx.flush();
         RenderSystem.clear(256, Minecraft.ON_OSX);
@@ -1423,11 +1315,9 @@ public class IntroCutsceneScreen extends Screen {
                     this.nameSuffix));
         }
 
-        // The choices are done: the cutscene session itself is over.
         this.finished = true;
     }
 
-    /** Advances the ending; returns true when the screen has been closed. */
     private boolean updateEnding(Minecraft mc) {
         if (!this.sent && this.endingTime >= ENDING_SEND) {
             this.sendChoices();
@@ -1443,10 +1333,6 @@ public class IntroCutsceneScreen extends Screen {
         return false;
     }
 
-    /**
-     * Candle goes out, the scene sinks into black, a single line says where the
-     * player is waking up, then the black lifts onto the real world.
-     */
     private void renderEnding(GuiGraphics gfx, String playerName) {
         float t = this.endingTime;
 
@@ -1454,7 +1340,6 @@ public class IntroCutsceneScreen extends Screen {
         float reveal = smooth(ENDING_REVEAL_START, ENDING_CLOSE, t);
 
         if (t < ENDING_FADE + 0.05F) {
-            // Still showing the scene underneath the fade.
             gfx.fill(0, 0, this.width, this.height, 0xFF000000);
             this.scene.render(gfx, this.time, this.animationTime, this.width, this.height,
                     playerName);
@@ -1504,15 +1389,11 @@ public class IntroCutsceneScreen extends Screen {
                 random.nextInt(RealisticAppearance.SCLERA_COLORS.length)];
     }
 
-    // ── Rebirth script playback ───────────────────────────────────────────────
-
     private void beginRebirth() {
         if (this.stage != null) {
             return;
         }
         this.stage = Stage.MODE;
-        // Hold the scene clock while the player works through the menus: the
-        // candle keeps burning, but the script and its fades do not advance.
         this.waitingForClick = true;
         this.time = Math.max(this.time,
                 CutsceneScript.DIALOGUE.get(CutsceneScript.DIALOGUE.size() - 1).end() + 0.05F);
@@ -1589,15 +1470,12 @@ public class IntroCutsceneScreen extends Screen {
         return Component.translatable(CutsceneScript.LINE_CLAN, clanName).getString();
     }
 
-    // ── Clock ─────────────────────────────────────────────────────────────────
-
     private void advanceClock() {
         long now = System.nanoTime();
         float delta = (now - this.lastFrameNanos) / 1_000_000_000.0F;
         this.lastFrameNanos = now;
         delta = Mth.clamp(delta, 0.0F, 0.1F);
 
-        // Ambient animation keeps breathing even while the script waits.
         this.animationTime += delta;
 
         if (this.ending) {
@@ -1616,8 +1494,6 @@ public class IntroCutsceneScreen extends Screen {
 
         float next = this.time + delta;
 
-        // Finish the line that ended during this tick. Monologue lines run on
-        // the clock; they never hold the script for a click.
         if (this.activeLine != null && next >= this.activeLine.end()) {
             CutsceneScript.Line ended = this.activeLine;
             this.time = ended.end();
@@ -1629,7 +1505,6 @@ public class IntroCutsceneScreen extends Screen {
             }
         }
 
-        // Start the next line as soon as its timestamp has been reached.
         if (this.activeLine == null && this.nextLineIndex < LINES.size()
                 && this.time >= LINES.get(this.nextLineIndex).start()) {
             this.activeLine = LINES.get(this.nextLineIndex);
@@ -1639,7 +1514,6 @@ public class IntroCutsceneScreen extends Screen {
         this.time = next;
     }
 
-    /** Advances the clock of the dialogue line played between two menus. */
     private void advanceRebirthClock(float delta) {
         if (this.waitingForClick || this.rebirthActive == null) {
             return;
@@ -1654,7 +1528,6 @@ public class IntroCutsceneScreen extends Screen {
         }
     }
 
-    /** First click completes the typewriter; a click on finished text moves on. */
     private void advanceOnClick() {
         if (this.waitingForClick) {
             this.releaseLine();
@@ -1665,8 +1538,6 @@ public class IntroCutsceneScreen extends Screen {
             return;
         }
 
-        // The monologue is paced by the script. A click may only finish the
-        // current line's typing, never skip the idle beats that follow it.
         if (this.activeLine.speaker() == CutsceneScript.Speaker.NARRATOR) {
             float typedFor = this.time - this.activeLine.start();
             if (typedFor < CutsceneScript.typewriterDuration(this.activeLine)) {
@@ -1678,16 +1549,13 @@ public class IntroCutsceneScreen extends Screen {
 
         float typedFor = this.time - this.activeLine.start();
         if (typedFor < CutsceneScript.typewriterDuration(this.activeLine)) {
-            // Finish the current line's typing, but keep it on screen.
             this.time = this.activeLine.start() + CutsceneScript.typewriterDuration(this.activeLine);
         } else {
-            // Already fully typed: move on immediately.
             this.time = this.activeLine.end();
             this.releaseLine();
         }
     }
 
-    /** Click handler for the dialogue lines played between menus. */
     private void advanceRebirthOnClick() {
         if (this.rebirthActive == null) {
             return;
@@ -1710,10 +1578,6 @@ public class IntroCutsceneScreen extends Screen {
         }
     }
 
-    /**
-     * Clears the held line. Between the monologue and the dialogue the scripted
-     * scene beats still play; after the last line the menus take over.
-     */
     private void releaseLine() {
         this.waitingForClick = false;
         this.activeLine = null;
@@ -1724,8 +1588,6 @@ public class IntroCutsceneScreen extends Screen {
         }
 
         if (this.nextLineIndex >= LINES.size()) {
-            // The final line hands over to the rebirth choices instead of
-            // ending the intro: the choice flow finishes the session.
             this.beginRebirth();
             return;
         }
@@ -1735,8 +1597,6 @@ public class IntroCutsceneScreen extends Screen {
         }
     }
 
-    // ── Sound ────────────────────────────────────────────────────────────────
-
     private static final float DIALOGUE_SOUND_VOLUME = 0.25F;
 
     private void updateSounds() {
@@ -1745,8 +1605,6 @@ public class IntroCutsceneScreen extends Screen {
         }
 
         if (this.waitingForClick) {
-            // The script clock is frozen, so hold cues that sit exactly on the
-            // line's end until the player actually advances.
             return;
         }
 
@@ -1758,7 +1616,6 @@ public class IntroCutsceneScreen extends Screen {
                     SimpleSoundInstance.forUI(cue.sound(), cue.pitch(), cue.volume()));
         }
 
-        // A soft cat noise under every dialogue line, including the player's.
         while (this.nextDialogueCue < CutsceneScript.DIALOGUE.size()
                 && this.time >= CutsceneScript.DIALOGUE.get(this.nextDialogueCue).start()) {
             CutsceneScript.Line line = CutsceneScript.DIALOGUE.get(this.nextDialogueCue++);
@@ -1770,8 +1627,6 @@ public class IntroCutsceneScreen extends Screen {
                     DIALOGUE_SOUND_VOLUME));
         }
     }
-
-    // ── Finishing ────────────────────────────────────────────────────────────
 
     private void finishAndClose() {
         if (this.finished) {
@@ -1792,8 +1647,6 @@ public class IntroCutsceneScreen extends Screen {
             WarriorsNetwork.CHANNEL.sendToServer(IntroFinishedPacket.INSTANCE);
         }
     }
-
-    // ── Input: cutscene lines, or rebirth menus when they take over ───────────
 
     @Override
     public boolean isPauseScreen() {
@@ -1885,17 +1738,14 @@ public class IntroCutsceneScreen extends Screen {
         }
 
         if (this.rebirthActive != null) {
-            // A spoken reaction line is playing; a click releases it.
             this.advanceRebirthOnClick();
             return true;
         }
 
         if (this.stage == Stage.CLAN_EDIT) {
-            // A click anywhere else leaves the name box (the box re-focuses itself).
             this.nameFocused = false;
         }
         if (this.stage == Stage.NAME) {
-            // Same for the warrior name boxes.
             this.nameFocus = 0;
         }
 
@@ -1945,8 +1795,6 @@ public class IntroCutsceneScreen extends Screen {
         }
         return true;
     }
-
-    // ── Math ──────────────────────────────────────────────────────────────────
 
     private static int argb(float alpha) {
         int a = Mth.clamp((int) (alpha * 255.0F), 0, 255);

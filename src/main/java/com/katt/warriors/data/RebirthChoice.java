@@ -4,15 +4,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 import java.util.Locale;
 
-/**
- * Persistent record of the choices made on the rebirth screens.
- *
- * <p>The values live in the player's Forge persistent data, so they survive
- * sessions just like the coat and eye customisation. The server writes them
- * from {@code RebirthChoicePacket}; the mode is mirrored to the client through
- * {@link com.katt.warriors.network.SyncAppearancePacket} so client-side systems
- * (mining speed, worldgen hints) can react without a second round trip.</p>
- */
 public final class RebirthChoice {
 
     public static final String NBT_MODE       = "warriors.rebirth.mode";
@@ -22,8 +13,6 @@ public final class RebirthChoice {
     public static final String NBT_AGE        = "warriors.rebirth.age";
 
     private RebirthChoice() {}
-
-    // ── Enums ────────────────────────────────────────────────────────────────
 
     public enum Mode {
         VANILLA,
@@ -68,12 +57,7 @@ public final class RebirthChoice {
         }
     }
 
-    /**
-     * The age a cat is born at. Younger cats are smaller, weaker and slower;
-     * an adult has the baseline stats of the mod.
-     */
     public enum Age {
-        //   max HP, speed, attack, mining, model scale
         KIT(6.0D, 0.70D, 0.50D, 0.55D, 0.60F),
         ADOLESCENT(8.0D, 0.88D, 0.85D, 0.80D, 0.85F),
         ADULT(10.0D, 1.00D, 1.00D, 1.00D, 1.00F);
@@ -93,15 +77,10 @@ public final class RebirthChoice {
             this.scale = scale;
         }
 
-        /** Maximum health in half-hearts. */
         public double maxHealth() { return maxHealth; }
-        /** Multiplier on walking and running speed. */
         public double speedFactor() { return speedFactor; }
-        /** Multiplier on melee damage. */
         public double attackFactor() { return attackFactor; }
-        /** Multiplier on block-breaking speed (realistic mode). */
         public double miningFactor() { return miningFactor; }
-        /** Size of the model and hitbox relative to an adult. */
         public float scale() { return scale; }
 
         public String id() {
@@ -147,10 +126,6 @@ public final class RebirthChoice {
             return "warriors.clan." + id() + ".desc";
         }
 
-        /**
-         * Whether this clan builds a camp. Strays and rogues live without
-         * one, and the kittypets have their village instead.
-         */
         public boolean hasCamp() {
             return this != STRAY && this != ROGUE && this != KITTYPET;
         }
@@ -167,8 +142,6 @@ public final class RebirthChoice {
             return ROGUE;
         }
     }
-
-    // ── Accessors ────────────────────────────────────────────────────────────
 
     public static boolean hasChosen(Player player) {
         return player.getPersistentData().getBoolean(NBT_CHOSEN);
@@ -200,10 +173,6 @@ public final class RebirthChoice {
         player.getPersistentData().putString(NBT_AGE, age.id());
     }
 
-    /**
-     * Players who chose the randomized (natural) look get a fresh one every
-     * life: custom and stylized choices are deliberate and stay.
-     */
     public static boolean rerollsOnDeath(Player player) {
         return hasChosen(player) && getAppearance(player) == Appearance.REALISTIC;
     }

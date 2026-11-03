@@ -10,14 +10,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Per-world record of which players have already seen the intro cutscene.
- *
- * <p>Stored in the overworld's data storage under {@code warriors_intro} so it
- * survives restarts. A player is only added to the set once the client reports
- * that the cutscene finished (or the server-side safety timeout fires), which
- * means a player who disconnects halfway through gets to see it again.</p>
- */
 public class IntroSavedData extends SavedData {
 
     private static final String DATA_NAME = "warriors_intro";

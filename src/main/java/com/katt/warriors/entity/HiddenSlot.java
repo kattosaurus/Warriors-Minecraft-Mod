@@ -7,11 +7,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * Stands in for one of the player inventory's slots and takes it away for cats
- * in realistic mode: it is not drawn, cannot be clicked and accepts nothing.
- * For everyone else it behaves exactly like the slot it replaces.
- */
 public class HiddenSlot extends Slot {
 
     private final Slot original;
@@ -21,11 +16,9 @@ public class HiddenSlot extends Slot {
         super(original.container, original.getContainerSlot(), original.x, original.y);
         this.original = original;
         this.player = player;
-        // Keep the slot's position in the menu.
         this.index = original.index;
     }
 
-    /** Whether this player's inventory (and armor) has been taken away. */
     public static boolean removed(Player player) {
         return RebirthChoice.getMode(player) == RebirthChoice.Mode.REALISTIC;
     }
@@ -55,7 +48,6 @@ public class HiddenSlot extends Slot {
         return original.getMaxStackSize(stack);
     }
 
-    /** Armor slots do their equip handling in {@code set}, so hand it to the original. */
     @Override
     public void set(ItemStack stack) {
         original.set(stack);

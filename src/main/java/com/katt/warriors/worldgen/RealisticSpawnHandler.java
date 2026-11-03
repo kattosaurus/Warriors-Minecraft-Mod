@@ -5,14 +5,6 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/**
- * Keeps the clanlands peaceful.
- *
- * <p>The chunk generator already reports empty spawn lists, but mob spawners,
- * mods and structure-free special spawns can still ask to place a monster. This
- * handler cancels any monster spawn inside the dimension, so a realistic
- * warrior never has to fight a zombie while patrolling.</p>
- */
 public class RealisticSpawnHandler {
 
     @SubscribeEvent

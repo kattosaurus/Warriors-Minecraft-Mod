@@ -8,9 +8,6 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
-/**
- * Registers the {@link ClanCatNpc} entity type with Forge.
- */
 public final class ClanCatNpcRegistry {
 
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =

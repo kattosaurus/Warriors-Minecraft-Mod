@@ -7,7 +7,6 @@ import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/** Loads the world's clan layout and keeps clients in sync with it. */
 public class ClanConfigHandler {
 
     @SubscribeEvent

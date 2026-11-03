@@ -60,7 +60,6 @@ public class Warriors
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
-    /** Custom worldgen codecs for the {@code warriors:clanlands} dimension. */
     public static final DeferredRegister<Codec<? extends ChunkGenerator>> CHUNK_GENERATORS =
             DeferredRegister.create(Registries.CHUNK_GENERATOR, MODID);
     public static final DeferredRegister<Codec<? extends BiomeSource>> BIOME_SOURCES =
@@ -81,55 +80,41 @@ public class Warriors
         CHUNK_GENERATORS.register(modEventBus);
         BIOME_SOURCES.register(modEventBus);
 
-        // NPC entity type registration
         ClanCatNpcRegistry.ENTITY_TYPES.register(modEventBus);
 
-        // Register entity attributes on the mod bus
         modEventBus.addListener(this::onEntityAttributeCreation);
 
         MinecraftForge.EVENT_BUS.register(this);
 
-        // Server-side: cat stats + eye commands
         MinecraftForge.EVENT_BUS.register(new CatPlayerHandler());
         MinecraftForge.EVENT_BUS.register(new EyeCommands());
 
-        // Warrior names (Prefix + suffix) shown instead of account names
         MinecraftForge.EVENT_BUS.register(new CatNameHandler());
 
-        // No inventory or armor for cats in realistic mode (hotbar and crafting stay)
         MinecraftForge.EVENT_BUS.register(new CatInventoryHandler());
 
-        // Sleeping on moss blocks and carpets (the nests in the camps' dens)
         MinecraftForge.EVENT_BUS.register(new MossSleepHandler());
 
-        // Server-side: the world's clan layout (names, terrain, number of clans)
         MinecraftForge.EVENT_BUS.register(new ClanConfigHandler());
 
-        // Server-side: scents of the clanlands territories
         MinecraftForge.EVENT_BUS.register(new ScentHandler());
 
-        // Server-side: first-join cutscene + its commands
         MinecraftForge.EVENT_BUS.register(new IntroCutsceneHandler());
         MinecraftForge.EVENT_BUS.register(new CutsceneCommands());
 
-        // Server-side: peaceful clanlands (no hostile mobs)
         MinecraftForge.EVENT_BUS.register(new RealisticSpawnHandler());
 
-        // Server-side: clan cat NPC spawning
         MinecraftForge.EVENT_BUS.register(new ClanCatSpawner());
 
-        // Server-side: den labels (armor stands above each den entrance)
         MinecraftForge.EVENT_BUS.register(new DenLabelPlacer());
     }
 
-    /** Register attributes for our custom mob before the entity is loaded. */
     private void onEntityAttributeCreation(EntityAttributeCreationEvent event) {
         event.put(ClanCatNpcRegistry.CLAN_CAT_NPC.get(), ClanCatNpc.createAttributes().build());
     }
 
     private void commonSetup(final FMLCommonSetupEvent event)
     {
-        // Cosmetic sync channel (cat coat + eye customisation).
         event.enqueueWork(WarriorsNetwork::register);
     }
 
@@ -141,14 +126,12 @@ public class Warriors
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents
     {
-        /** Register our custom cat model layer so EntityModelSet can bake it. */
         @SubscribeEvent
         public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event)
         {
             event.registerLayerDefinition(CatModel.LAYER_LOCATION, CatModel::createBodyLayer);
         }
 
-        /** Register the renderer for clan cat NPCs. */
         @SubscribeEvent
         public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event)
         {
@@ -156,7 +139,6 @@ public class Warriors
                     ClanCatNpcRenderer::new);
         }
 
-        /** Re-check which cat variant textures exist whenever resources reload. */
         @SubscribeEvent
         public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event)
         {
@@ -167,11 +149,9 @@ public class Warriors
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event)
         {
-            // Register the client-side cat-renderer handler
             MinecraftForge.EVENT_BUS.register(new CatPlayerRenderHandler());
             MinecraftForge.EVENT_BUS.register(new InventoryScreenHandler());
 
-            // Cutscene opener (waits for the world to finish loading)
             MinecraftForge.EVENT_BUS.register(new IntroCutsceneClient());
         }
     }

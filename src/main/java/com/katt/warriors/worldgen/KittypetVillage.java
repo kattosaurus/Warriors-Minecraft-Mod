@@ -19,33 +19,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-/**
- * The Kittypet village: a proper little twoleg town, generated together with
- * the terrain.
- *
- * <p>The layout is planned once, deterministically: a plaza with a well and
- * market stalls at the centre, two winding main streets, a ring road with four
- * spurs, and around them gabled houses, cottages, long houses, a library, a
- * smithy, a hall, a barn, fenced farm plots and street lamps. Every building
- * is a pure function of its local coordinates, so each chunk writes only its
- * own slice and neighbouring chunks always agree, with no loading, no
- * "already built" marker and no structure registry.</p>
- *
- * <p>The terrain under the village is levelled by {@link ClanlandsTerrain}, so
- * the whole layout sits at {@link #GROUND_Y}.</p>
- */
 public final class KittypetVillage {
 
-    /**
-     * Centre of the village, set when the plan is built. The village stands in
-     * the first territory whose terrain is TOWN; the plan is rebuilt whenever
-     * the world's clan layout changes.
-     */
     public static volatile int centerX;
     public static volatile int centerZ;
     public static final int GROUND_Y = ClanlandsTerrain.VILLAGE_Y;
 
-    /** Nothing is built further than this from the centre. */
     public static final int RADIUS = 58;
 
     private static final int PLAZA_RADIUS = 8;
@@ -56,7 +35,6 @@ public final class KittypetVillage {
     private static volatile Plan plan;
     private static volatile ClanlandsLayout planLayout;
 
-    /** The village plan for the current layout, or {@code null} if there is no town. */
     private static Plan plan() {
         ClanlandsLayout layout = ClanlandsLayout.current();
         if (layout.village() == null) {
@@ -75,7 +53,6 @@ public final class KittypetVillage {
         return plan;
     }
 
-    /** Whether the village stands in this clan's territory. */
     public static boolean isVillageClan(Clan clan) {
         ClanlandsLayout.Site village = ClanlandsLayout.current().village();
         return village != null && village.clan() == clan;
@@ -83,15 +60,11 @@ public final class KittypetVillage {
 
     private KittypetVillage() {}
 
-    /** Where Kittypet players wake up: on the plaza, a few steps from the well. */
     public static BlockPos spawnPos() {
         plan();
         return new BlockPos(centerX, GROUND_Y + 1, centerZ + 4);
     }
 
-    // ── Chunk entry point ─────────────────────────────────────────────────────
-
-    /** Writes the part of the village that lies in this chunk (if any). */
     public static void generate(ChunkAccess chunk, Heightmap oceanFloor, Heightmap worldSurface) {
         Plan village = plan();
         if (village == null) {
@@ -109,7 +82,6 @@ public final class KittypetVillage {
 
         Placer placer = new Placer(chunk, oceanFloor, worldSurface, minX, minZ);
 
-        // Streets and the plaza first, so buildings can overwrite them.
         for (int lx = 0; lx < 16; lx++) {
             for (int lz = 0; lz < 16; lz++) {
                 int x = minX + lx;
@@ -129,8 +101,6 @@ public final class KittypetVillage {
         }
     }
 
-    // ── Roads ─────────────────────────────────────────────────────────────────
-
     private static boolean roadCell(int x, int z) {
         double dx = x - centerX;
         double dz = z - centerZ;
@@ -142,7 +112,6 @@ public final class KittypetVillage {
             return true;
         }
 
-        // The two main streets wind gently.
         if (Math.abs(dz - 3.0 * Math.sin(dx * 0.07)) <= 1.6) {
             return true;
         }
@@ -150,13 +119,11 @@ public final class KittypetVillage {
             return true;
         }
 
-        // The ring road, slightly wavy.
         double angle = Math.atan2(dz, dx);
         if (Math.abs(r - (RING_RADIUS + 1.5 * Math.sin(angle * 3.0))) <= 1.5) {
             return true;
         }
 
-        // Four spurs leading out of the ring.
         if (r >= RING_RADIUS - 2) {
             for (int k = 0; k < 4; k++) {
                 double a = Math.toRadians(45.0 + 90.0 * k);
@@ -204,8 +171,6 @@ public final class KittypetVillage {
         return Blocks.DIRT_PATH.defaultBlockState();
     }
 
-    // ── Planning ──────────────────────────────────────────────────────────────
-
     private static final class Plan {
         final List<Piece> pieces = new ArrayList<>();
         final Set<Long> paths = new HashSet<>();
@@ -223,15 +188,12 @@ public final class KittypetVillage {
 
         plan.pieces.add(new Well());
 
-        // Market stalls on the corners of the plaza.
         int[][] stalls = {{-5, 5}, {5, 5}, {-5, -5}, {5, -5}};
         for (int[] stall : stalls) {
             plan.pieces.add(new Stall(centerX + stall[0], centerZ + stall[1],
                     (stall[0] + stall[1]) % 2 == 0));
         }
 
-        // The hall: the biggest building, just outside the ring road where there
-        // is room for it, facing the village.
         int[][] hallSpots = {{13, -42}, {-13, -42}, {42, 13}, {-42, 13},
                 {13, 42}, {-13, 42}, {42, -13}, {-42, -13},
                 {17, -12}, {-17, -12}, {17, 12}, {-17, 12}};
@@ -242,7 +204,6 @@ public final class KittypetVillage {
             }
         }
 
-        // Two barns out by the fields.
         int[][] barnSpots = {{-45, -27}, {45, 27}, {27, -45}, {-27, 45},
                 {-47, 20}, {47, -20}};
         for (int[] spot : barnSpots) {
@@ -251,8 +212,6 @@ public final class KittypetVillage {
             }
         }
 
-        // Houses around the plaza and along the outer ring, in two passes so
-        // gaps left by the first one get filled.
         int[] radii = {15, 19, 24, 37, 41, 46, 50};
         for (int pass = 0; pass < 2; pass++) {
             for (int radius : radii) {
@@ -272,7 +231,6 @@ public final class KittypetVillage {
             }
         }
 
-        // Street lamps along the main streets and the ring road.
         addLamps(plan);
 
         return plan;
@@ -307,7 +265,6 @@ public final class KittypetVillage {
         return Kind.LONGHOUSE;
     }
 
-    /** Places a building facing the village centre, if it fits and has a way to a street. */
     private static boolean tryBuilding(Plan plan, Random random, Kind kind, int x, int z) {
         int width;
         int depth;
@@ -322,7 +279,6 @@ public final class KittypetVillage {
             default -> { width = 9; depth = 11; wallHeight = 4; }
         }
 
-        // Face the centre along the dominant axis.
         double dx = centerX - x;
         double dz = centerZ - z;
         int fx = 0;
@@ -346,7 +302,6 @@ public final class KittypetVillage {
             return false;
         }
 
-        // The door must connect to a street with a short path.
         List<Long> path = pathToRoad(plan, building);
         if (path == null) {
             return false;
@@ -399,12 +354,11 @@ public final class KittypetVillage {
         return true;
     }
 
-    /** Cells from the door out to the nearest street, or {@code null} if none is close. */
     private static List<Long> pathToRoad(Plan plan, Building building) {
         int mid = (building.w - 1) / 2;
         int startX = building.wx(mid, -1);
         int startZ = building.wz(mid, -1);
-        int stepX = -building.b;   // local -v points out of the front door
+        int stepX = -building.b;
         int stepZ = -building.e;
 
         List<Long> cells = new ArrayList<>();
@@ -430,7 +384,6 @@ public final class KittypetVillage {
             if (Math.abs(t) < 11) {
                 continue;
             }
-            // East-west street, south side; north-south street, east side.
             addLamp(plan, centerX + t, (int) Math.round(centerZ + 3.0 * Math.sin(t * 0.07)) + 3);
             addLamp(plan, (int) Math.round(centerX + 3.0 * Math.sin(t * 0.06 + 1.0)) + 3, centerZ + t);
         }
@@ -441,7 +394,6 @@ public final class KittypetVillage {
                     centerX + (int) Math.round(radius * Math.cos(angle)),
                     centerZ + (int) Math.round(radius * Math.sin(angle)));
         }
-        // Around the plaza.
         for (int k = 0; k < 4; k++) {
             double angle = Math.toRadians(90.0 * k);
             addLamp(plan,
@@ -467,8 +419,6 @@ public final class KittypetVillage {
         plan.pieces.add(lamp);
     }
 
-    // ── Building materials ────────────────────────────────────────────────────
-
     private record Palette(BlockState log, BlockState planks, Block door,
                            Block stairs, BlockState roofFull) {}
 
@@ -489,8 +439,6 @@ public final class KittypetVillage {
             Blocks.RED_BED, Blocks.BLUE_BED, Blocks.GREEN_BED, Blocks.YELLOW_BED, Blocks.WHITE_BED
     };
 
-    // ── Pieces ────────────────────────────────────────────────────────────────
-
     private abstract static class Piece {
         int minX;
         int maxX;
@@ -505,7 +453,6 @@ public final class KittypetVillage {
         }
     }
 
-    /** The well at the heart of the plaza. */
     private static final class Well extends Piece {
         Well() {
             minX = centerX - 2;
@@ -541,7 +488,6 @@ public final class KittypetVillage {
         }
     }
 
-    /** A market stall: four posts, a striped awning and a barrel counter. */
     private static final class Stall extends Piece {
         private final int x;
         private final int z;
@@ -579,7 +525,6 @@ public final class KittypetVillage {
         }
     }
 
-    /** A fence-post lamp. */
     private static final class Lamp extends Piece {
         private final int x;
         private final int z;
@@ -603,7 +548,6 @@ public final class KittypetVillage {
         }
     }
 
-    /** A fenced 9 × 9 farm plot with a water channel and three kinds of crops. */
     private static final class Farm extends Piece {
         private final int cx;
         private final int cz;
@@ -623,7 +567,6 @@ public final class KittypetVillage {
             return Math.max(Math.abs(i), Math.abs(j)) == 4;
         }
 
-        /** A ring cell that holds a fence (everything but the gate). */
         private static boolean isFence(int i, int j) {
             return ring(i, j) && !(i == 0 && j == 4);
         }
@@ -640,10 +583,9 @@ public final class KittypetVillage {
 
                     if (ring(i, j)) {
                         if (i == 0 && j == 4) {
-                            p.set(x, GROUND_Y, z, Blocks.DIRT_PATH.defaultBlockState()); // gate
+                            p.set(x, GROUND_Y, z, Blocks.DIRT_PATH.defaultBlockState());
                             continue;
                         }
-                        // Plot axes may be swapped relative to the world's.
                         boolean east = swap ? isFence(i, j + 1) : isFence(i + 1, j);
                         boolean west = swap ? isFence(i, j - 1) : isFence(i - 1, j);
                         boolean south = swap ? isFence(i + 1, j) : isFence(i, j + 1);
@@ -672,17 +614,11 @@ public final class KittypetVillage {
         }
     }
 
-    /**
-     * A building. Local coordinates: {@code u} runs along the front wall, {@code v}
-     * runs from the front door to the back, {@code y} is height above the floor
-     * (the floor is at y = 0, which is the village ground level).
-     */
     private static final class Building extends Piece {
         final Kind kind;
         final int w;
         final int d;
         final int h;
-        // World position of local (u, v): (ox + a·u + b·v, oz + c·u + e·v).
         final int ox;
         final int oz;
         final int a;
@@ -705,7 +641,6 @@ public final class KittypetVillage {
             this.bed = BEDS[bedIndex % BEDS.length];
             this.chimney = chimney;
 
-            // Local +v points away from the door, i.e. opposite to the front.
             this.b = -frontX;
             this.e = -frontZ;
             this.a = frontZ;
@@ -786,8 +721,6 @@ public final class KittypetVillage {
             return interior(u, y, v, mid);
         }
 
-        // ── Walls ─────────────────────────────────────────────────────────────
-
         private BlockState wallBlock(int u, int y, int v, int mid, boolean wallU, boolean wallV) {
             if (wallU && wallV) {
                 return palette.log();
@@ -802,7 +735,6 @@ public final class KittypetVillage {
                 return palette.planks();
             }
             if (isWindow(u, y, v, mid, wallU)) {
-                // Front and back walls run along u; side walls run along v.
                 Direction.Axis axis = wallU ? vDir.getAxis() : uDir.getAxis();
                 boolean alongX = axis == Direction.Axis.X;
                 return Blocks.GLASS_PANE.defaultBlockState()
@@ -811,7 +743,6 @@ public final class KittypetVillage {
                         .setValue(BlockStateProperties.NORTH, !alongX)
                         .setValue(BlockStateProperties.SOUTH, !alongX);
             }
-            // A band of timber under the roof gives the walls some structure.
             return y == h ? palette.log() : palette.planks();
         }
 
@@ -832,7 +763,7 @@ public final class KittypetVillage {
             if (v == 0) {
                 return w >= 5 && (u == 1 || u == w - 2);
             }
-            return u == mid; // back wall
+            return u == mid;
         }
 
         private BlockState door(DoubleBlockHalf half) {
@@ -841,10 +772,7 @@ public final class KittypetVillage {
                     .setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, half);
         }
 
-        // ── Roof ──────────────────────────────────────────────────────────────
-
         private BlockState roofBlock(int u, int y, int v, int mid, boolean inU, boolean inV) {
-            // The chimney rises through the roof.
             if (chimney && u == w - 2 && v == d - 2 && y <= h + 5) {
                 return COBBLE;
             }
@@ -865,7 +793,6 @@ public final class KittypetVillage {
                 }
             }
 
-            // Fill the gable ends so the attic is closed.
             if (inU && (v == 0 || v == d - 1)) {
                 int k = Math.min(u, w - 1 - u);
                 int fillTop = u == mid ? h + mid : h + 1 + k;
@@ -875,7 +802,6 @@ public final class KittypetVillage {
             }
 
             if (y == h + 1 && inV) {
-                // Beam along the top of the side walls, and a ceiling inside.
                 if (u == 0 || u == w - 1) {
                     return palette.planks();
                 }
@@ -885,8 +811,6 @@ public final class KittypetVillage {
             }
             return null;
         }
-
-        // ── Interiors ─────────────────────────────────────────────────────────
 
         private BlockState interior(int u, int y, int v, int mid) {
             if (chimney && u == w - 2 && v == d - 2) {
@@ -1007,7 +931,6 @@ public final class KittypetVillage {
                 if ((u == 1 || u == w - 2) && v == d - 2) {
                     return Blocks.BOOKSHELF.defaultBlockState();
                 }
-                // Two rows of benches either side of the aisle.
                 if ((u == mid - 2 || u == mid + 2) && v >= 3 && v <= d - 5 && v % 2 == 1) {
                     return Blocks.OAK_STAIRS.defaultBlockState()
                             .setValue(BlockStateProperties.HORIZONTAL_FACING, vDir.getOpposite());
@@ -1033,9 +956,6 @@ public final class KittypetVillage {
         }
     }
 
-    // ── Chunk writer ──────────────────────────────────────────────────────────
-
-    /** Writes blocks into one chunk, ignoring anything outside it. */
     private static final class Placer {
         private final ChunkAccess chunk;
         private final Heightmap oceanFloor;
@@ -1072,8 +992,6 @@ public final class KittypetVillage {
             oceanFloor.update(lx, y, lz, state);
         }
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static Direction directionOf(int dx, int dz) {
         if (dx > 0) {

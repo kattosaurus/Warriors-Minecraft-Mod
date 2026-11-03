@@ -3,21 +3,11 @@ package com.katt.warriors.data;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 
-/**
- * Which territory scents a cat has learned.
- *
- * <p>Every scent starts out unknown. Each time a cat crosses into another
- * territory it smells it once more; after {@link #LEARN_VISITS} visits the
- * scent is known. The player's own clan always smells like home.</p>
- */
 public final class ScentData {
 
-    /** Compound holding the number of visits per territory id. */
     public static final String NBT_VISITS = "warriors.scent";
-    /** Territory id the cat was last announced in. */
     public static final String NBT_LAST = "warriors.scent_last";
 
-    /** Visits needed before a scent is known. */
     public static final int LEARN_VISITS = 3;
 
     private ScentData() {}
@@ -30,7 +20,6 @@ public final class ScentData {
         return data.getCompound(NBT_VISITS).getInt(territory);
     }
 
-    /** Records one more visit and returns the new total. */
     public static int recordVisit(Player player, String territory) {
         CompoundTag data = player.getPersistentData();
         CompoundTag visits = data.getCompound(NBT_VISITS);

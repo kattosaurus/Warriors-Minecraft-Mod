@@ -2,13 +2,6 @@ package com.katt.warriors.data;
 
 import java.util.List;
 
-/**
- * Turns the stored {@code #RRGGBB} appearance colours into the plain words the
- * rebirth dialogue uses ("a <em>ginger</em> cat with <em>amber</em> eyes").
- *
- * <p>Colours are matched to the closest named swatch, so both the fixed palettes
- * and the blended colours rolled for a natural birth get a readable name.</p>
- */
 public final class AppearanceNames {
 
     private record Named(String name, int rgb) {}
@@ -16,7 +9,6 @@ public final class AppearanceNames {
     private static final String FALLBACK_PELT = "natural";
     private static final String FALLBACK_EYE = "natural";
 
-    /** Coat names, matched against both the natural and custom palettes. */
     private static final List<Named> PELTS = List.of(
             new Named("black", 0x141414),
             new Named("charcoal", 0x2A2A2A),
@@ -43,7 +35,6 @@ public final class AppearanceNames {
             new Named("pale green", 0xB4C48A)
     );
 
-    /** Iris names, covering the realistic palette and common custom colours. */
     private static final List<Named> EYES = List.of(
             new Named("amber", 0xC98A2E),
             new Named("gold", 0xD4A72C),
@@ -66,12 +57,10 @@ public final class AppearanceNames {
 
     private AppearanceNames() {}
 
-    /** A readable coat name for a stored pelt colour. */
     public static String pelt(String hexColour) {
         return nearest(PELTS, hexColour, FALLBACK_PELT);
     }
 
-    /** A readable iris name for a stored eye colour. */
     public static String eye(String hexColour) {
         return nearest(EYES, hexColour, FALLBACK_EYE);
     }

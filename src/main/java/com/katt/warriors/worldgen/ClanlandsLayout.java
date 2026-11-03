@@ -4,28 +4,21 @@ import com.katt.warriors.data.ClanConfig;
 import com.katt.warriors.data.RebirthChoice.Clan;
 import com.katt.warriors.data.Terrain;
 
-/**
- * Where the territories are and what they are made of, built from the world's
- * {@link ClanConfig}. The terrain functions all read the current layout.
- */
 public final class ClanlandsLayout {
 
-    /** One territory. {@code clan} is {@code null} for the unclaimed centre. */
     public record Site(Clan clan, Terrain terrain, int x, int z, double weight) {}
 
-    /** Territory centres by {@link Clan} ordinal: deliberately off-grid. */
     private static final int[][] POSITIONS = {
-            {-272, -236},  // Thunder
-            {-238, 22},    // River
-            {246, 34},     // Shadow
-            {14, -298},    // Wind
-            {292, -218},   // Sky
-            {-6, 252},     // Kittypet
-            {-262, 276},   // Stray
-            {268, 262}     // Rogue
+            {-272, -236},
+            {-238, 22},
+            {246, 34},
+            {14, -298},
+            {292, -218},
+            {-6, 252},
+            {-262, 276},
+            {268, 262}
     };
 
-    /** How large each territory is by default, by {@link Clan} ordinal. */
     private static final double[] BASE_WEIGHT = {1.00, 1.02, 1.06, 1.08, 1.00, 0.98, 0.96, 1.00};
 
     private static volatile ClanlandsLayout current = of(ClanConfig.defaults());
@@ -73,12 +66,10 @@ public final class ClanlandsLayout {
         return sites;
     }
 
-    /** The territory the village is built in, or {@code null} if there is none. */
     public Site village() {
         return village;
     }
 
-    /** The site of a clan, or the first one if that clan does not exist. */
     public Site siteOf(Clan clan) {
         for (Site site : sites) {
             if (site.clan() == clan) {

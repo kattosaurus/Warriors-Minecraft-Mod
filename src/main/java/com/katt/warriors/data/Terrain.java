@@ -4,12 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * The kinds of land a clan's territory can be built on.
- *
- * <p>The biome index points into the biome list of the clanlands dimension
- * (see {@code ClanlandsBiomeSource}).</p>
- */
 public enum Terrain {
     FOREST(0, true),
     LAKE(1, true),
@@ -19,7 +13,6 @@ public enum Terrain {
     TOWN(5, true),
     SCRUB(6, true),
     TAIGA(7, true),
-    /** The unclaimed heart of the valley; not selectable. */
     WILD(8, false),
     DESERT(11, true),
     TUNDRA(12, true);
@@ -52,12 +45,10 @@ public enum Terrain {
         return "warriors.terrain." + id() + ".desc";
     }
 
-    /** What this land smells like, used by the scent system. */
     public String scentKey() {
         return "warriors.scent.hint." + id();
     }
 
-    /** Terrains the player can pick, in display order. */
     public static List<Terrain> choices() {
         List<Terrain> list = new ArrayList<>();
         for (Terrain terrain : values()) {

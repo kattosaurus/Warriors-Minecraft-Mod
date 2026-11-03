@@ -7,16 +7,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/**
- * Registers {@code /warriors intro} commands, used to replay or reset the
- * first-join cutscene.
- *
- * <pre>
- *   /warriors intro          replay the cutscene for yourself
- *   /warriors intro reset    make it play again on your next login
- *   /warriors intro reset all  make it play for everyone on their next login
- * </pre>
- */
 public class CutsceneCommands {
 
     @SubscribeEvent

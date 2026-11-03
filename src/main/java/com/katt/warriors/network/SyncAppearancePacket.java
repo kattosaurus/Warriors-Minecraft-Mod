@@ -14,15 +14,6 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-/**
- * Server → client snapshot of one player's cosmetic appearance.
- *
- * <p>Forge's {@code ForgeData} compound (the player's persistent NBT) is not
- * part of the entity spawn packet, so values written by {@code /eye} on the
- * server never reach the client renderer on their own. This packet carries the
- * values across and is re-sent on login, respawn, dimension change, when another
- * player starts tracking us, and after every command mutation.</p>
- */
 public record SyncAppearancePacket(
         UUID playerId,
         String variant,
@@ -39,9 +30,7 @@ public record SyncAppearancePacket(
         String namePrefix,
         String nameSuffix) {
 
-    /** Builds a packet from the server-side player data. */
     public static SyncAppearancePacket fromPlayer(ServerPlayer player) {
-        // Players born before names existed get one now.
         CatName.ensure(player);
         return new SyncAppearancePacket(
                 player.getUUID(),
@@ -101,7 +90,6 @@ public record SyncAppearancePacket(
 
     public static void handle(SyncAppearancePacket packet, Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
-        // Keep the client classes out of the dedicated-server class loader.
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientAppearanceSync.apply(packet));
         ctx.setPacketHandled(true);
     }

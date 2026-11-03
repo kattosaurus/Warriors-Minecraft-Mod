@@ -7,7 +7,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.PacketDistributor;
 
-/** Server-side owner of the world's clan layout. */
 public final class ClanConfigManager {
 
     private static volatile ClanConfig current = ClanConfig.defaults();
@@ -18,19 +17,16 @@ public final class ClanConfigManager {
         return current;
     }
 
-    /** Loads the saved layout when a world starts. */
     public static void load(MinecraftServer server) {
         current = ClanConfigData.get(server).getConfig().copy();
         ClanlandsLayout.set(current);
     }
 
-    /** Forgets the layout when the world closes. */
     public static void reset() {
         current = ClanConfig.defaults();
         ClanlandsLayout.set(current);
     }
 
-    /** Only the owner (or an operator) may change the clans, and only before the land exists. */
     public static boolean canEdit(ServerPlayer player) {
         if (current.isLocked()) {
             return false;
@@ -40,7 +36,6 @@ public final class ClanConfigManager {
                 || (server != null && server.isSingleplayerOwner(player.getGameProfile()));
     }
 
-    /** Applies a new layout from a player's edits. */
     public static void update(MinecraftServer server, ClanConfig edited) {
         ClanConfig next = edited.copy();
         next.sanitize();
@@ -49,7 +44,6 @@ public final class ClanConfigManager {
         broadcast(server);
     }
 
-    /** Called when the clanlands are about to be generated: the layout is final. */
     public static void lock(MinecraftServer server) {
         if (current.isLocked()) {
             return;

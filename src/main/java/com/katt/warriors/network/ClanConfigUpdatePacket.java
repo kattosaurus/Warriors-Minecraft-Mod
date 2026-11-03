@@ -9,7 +9,6 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/** Client → server: the player's edits to the clan layout. */
 public record ClanConfigUpdatePacket(ClanConfig config) {
 
     public void encode(FriendlyByteBuf buf) {
@@ -30,7 +29,6 @@ public record ClanConfigUpdatePacket(ClanConfig config) {
             if (ClanConfigManager.canEdit(player)) {
                 ClanConfigManager.update(player.getServer(), packet.config());
             } else {
-                // Not allowed (or the land already exists): put their screen right.
                 ClanConfigManager.sendTo(player);
             }
         });

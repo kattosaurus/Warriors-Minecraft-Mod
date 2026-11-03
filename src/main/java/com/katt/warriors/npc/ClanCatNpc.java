@@ -27,51 +27,25 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import javax.annotation.Nullable;
 import java.util.Random;
 
-/**
- * A named cat NPC that lives in a clan camp den or patrols a clan's territory.
- *
- * <p>Each NPC carries:
- * <ul>
- *   <li>A warrior-style name (via {@link ClanCatNames}).</li>
- *   <li>A pelt pattern ({@link PeltData#PATTERNS}) or solid colour, biased
- *       heavily towards patterned pelts (80%).</li>
- *   <li>A pelt colour hex from {@link PeltData#NATURAL_PELTS}.</li>
- *   <li>A {@link Clan} and a {@link Role}.</li>
- * </ul>
- *
- * <p>When a player who does <em>not</em> belong to this NPC's clan steps into
- * the clan's territory, there is a random chance that a nearby patrol NPC will
- * start chasing them out (the {@link ChaseIntruderGoal}).</p>
- */
 public class ClanCatNpc extends PathfinderMob {
 
-    // ── Synced data keys ──────────────────────────────────────────────────
-
-    /** The NPC's warrior name, shown above their head. */
     private static final EntityDataAccessor<String> DATA_NAME =
             SynchedEntityData.defineId(ClanCatNpc.class, EntityDataSerializers.STRING);
 
-    /** Clan id string (e.g. "thunderclan"). */
     private static final EntityDataAccessor<String> DATA_CLAN =
             SynchedEntityData.defineId(ClanCatNpc.class, EntityDataSerializers.STRING);
 
-    /** Hex pelt colour (e.g. "#B87333") or empty for default. */
     private static final EntityDataAccessor<String> DATA_PELT_COLOR =
             SynchedEntityData.defineId(ClanCatNpc.class, EntityDataSerializers.STRING);
 
-    /** Pattern name (e.g. "tabby") or empty for solid. */
     private static final EntityDataAccessor<String> DATA_PATTERN =
             SynchedEntityData.defineId(ClanCatNpc.class, EntityDataSerializers.STRING);
 
-    /** Iris colour hex (e.g. "#C98A2E"). */
     private static final EntityDataAccessor<String> DATA_EYE_COLOR =
             SynchedEntityData.defineId(ClanCatNpc.class, EntityDataSerializers.STRING);
 
-    /** Role ordinal (index into {@link Role#values()}). */
     private static final EntityDataAccessor<Integer> DATA_ROLE =
             SynchedEntityData.defineId(ClanCatNpc.class, EntityDataSerializers.INT);
-
-    // ── NBT keys ──────────────────────────────────────────────────────────
 
     public static final String NBT_NPC_NAME   = "warriors.npc.name";
     public static final String NBT_NPC_CLAN   = "warriors.npc.clan";
@@ -80,28 +54,16 @@ public class ClanCatNpc extends PathfinderMob {
     public static final String NBT_NPC_ROLE   = "warriors.npc.role";
     public static final String NBT_NPC_EYES   = "warriors.npc.eyes";
 
-    // ── Constants ─────────────────────────────────────────────────────────
-
-    /**
-     * Probability that a given NPC will start chasing an intruding player on
-     * any given check (once per 5 seconds). Multiple NPCs can join the chase.
-     */
     private static final float CHASE_CHANCE = 0.55f;
 
-    /** Radius within which the chase goal activates (blocks). */
     private static final double CHASE_DETECT_RADIUS = 28.0;
 
-    /** Chase continues until the intruder is this far outside the territory. */
     private static final double CHASE_GIVE_UP_RADIUS = 48.0;
-
-    // ── Fields ────────────────────────────────────────────────────────────
 
     public ClanCatNpc(EntityType<? extends ClanCatNpc> type, Level level) {
         super(type, level);
         this.setMaxUpStep(0.6f);
     }
-
-    // ── Attributes ────────────────────────────────────────────────────────
 
     public static AttributeSupplier.Builder createAttributes() {
         return Mob.createMobAttributes()
@@ -110,8 +72,6 @@ public class ClanCatNpc extends PathfinderMob {
                 .add(Attributes.FOLLOW_RANGE, 32.0)
                 .add(Attributes.ATTACK_DAMAGE, 2.0);
     }
-
-    // ── Initialisation ────────────────────────────────────────────────────
 
     @Override
     protected void defineSynchedData() {
@@ -136,12 +96,6 @@ public class ClanCatNpc extends PathfinderMob {
                 true, this::isIntruder));
     }
 
-    /**
-     * Returns true if this player is an intruder in this NPC's territory.
-     * Players of the same clan are never intruders.
-     *
-     * <p>Public so that {@link ChaseIntruderGoal} can call it.</p>
-     */
     public boolean isIntruder(LivingEntity entity) {
         if (!(entity instanceof ServerPlayer player)) return false;
         if (!player.level().dimension().equals(ClanlandsDimension.LEVEL)) return false;
@@ -153,16 +107,12 @@ public class ClanCatNpc extends PathfinderMob {
         return territoryClan == getNpcClan();
     }
 
-    // ── Spawning initialisation ────────────────────────────────────────────
-
     @Nullable
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
                                         MobSpawnType reason, @Nullable SpawnGroupData spawnData,
                                         @Nullable CompoundTag dataTag) {
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, reason, spawnData, dataTag);
-        // If spawned with specific NBT data (our spawner does this), the data is
-        // already set; otherwise pick random defaults.
         if (this.entityData.get(DATA_NAME).isEmpty()) {
             randomiseAppearance(new Random(this.blockPosition().asLong() ^ 0x5A7C3B1D));
         }
@@ -170,40 +120,30 @@ public class ClanCatNpc extends PathfinderMob {
         return data;
     }
 
-    /**
-     * Assigns a random warrior-style name, pelt colour and pattern.
-     * Called by {@link ClanCatSpawner} and by {@link #finalizeSpawn}.
-     */
     public void randomiseAppearance(Random rng) {
-        // Name
         long nameSeed = rng.nextLong();
         String name = ClanCatNames.generate(getNpcClan(), getNpcRole(), nameSeed);
         setNpcName(name);
 
-        // Pelt colour: pick from the natural palette
         String[] naturalPelts = PeltData.NATURAL_PELTS;
         String color = naturalPelts[rng.nextInt(naturalPelts.length)];
         setNpcPeltColor(color);
 
-        // Iris colour: one of the natural cat eye colours
         String[] eyes = RealisticAppearance.EYE_COLORS;
         setNpcEyeColor(eyes[rng.nextInt(eyes.length)]);
 
-        // Pattern: 80% chance of a pattern (warrior cats in the books are
-        // usually patterned), otherwise a solid coat.
         String pattern;
         if (rng.nextFloat() < 0.80f) {
             String[] patterns = PeltData.PATTERNS;
             pattern = patterns[rng.nextInt(patterns.length)];
         } else {
-            pattern = "";   // solid coat
+            pattern = "";
         }
         setNpcPattern(pattern);
 
         refreshCustomName();
     }
 
-    /** Updates the entity's display name to match the stored warrior name. */
     private void refreshCustomName() {
         String name = getNpcName();
         if (!name.isEmpty()) {
@@ -212,13 +152,6 @@ public class ClanCatNpc extends PathfinderMob {
         }
     }
 
-    // ── Size ──────────────────────────────────────────────────────────────
-
-    /**
-     * How big a cat of this role is compared with an adult, using the same
-     * proportions as a player born at that age: kits are small and
-     * apprentices (adolescents) a bit smaller than a warrior.
-     */
     public static float modelScale(Role role) {
         return switch (role) {
             case KIT -> RebirthChoice.Age.KIT.scale();
@@ -239,8 +172,6 @@ public class ClanCatNpc extends PathfinderMob {
             this.refreshDimensions();
         }
     }
-
-    // ── Getters / setters ─────────────────────────────────────────────────
 
     public String getNpcName() {
         return this.entityData.get(DATA_NAME);
@@ -292,8 +223,6 @@ public class ClanCatNpc extends PathfinderMob {
         this.entityData.set(DATA_PATTERN, pattern);
     }
 
-    // ── Persistence ───────────────────────────────────────────────────────
-
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
@@ -334,11 +263,8 @@ public class ClanCatNpc extends PathfinderMob {
         refreshCustomName();
     }
 
-    // ── Misc overrides ────────────────────────────────────────────────────
-
     @Override
     public boolean removeWhenFarAway(double distanceToClosestPlayer) {
-        // NPCs are permanent residents; do not despawn them.
         return false;
     }
 

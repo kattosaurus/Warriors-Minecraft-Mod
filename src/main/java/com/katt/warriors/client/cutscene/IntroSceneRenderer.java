@@ -35,16 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Draws every layer of the intro cutscene.
- *
- * <p>Layering (GUI z grows towards the viewer):</p>
- * <ul>
- *   <li>z = 0 – void gradient, nebulae, stars, candlelight pools, candle and dust</li>
- *   <li>z = 50 – the 3D cat model (renders on the depth buffer after the 2D pass)</li>
- *   <li>z = 300 – vignette, dialogue shading + text, letterbox bars</li>
- * </ul>
- */
 public final class IntroSceneRenderer {
 
     private static final ResourceLocation GLOW =
@@ -63,14 +53,11 @@ public final class IntroSceneRenderer {
     private static final ResourceLocation RIGHT_PUPIL_TEXTURE =
             new ResourceLocation(Warriors.MODID, "textures/entity/cat_player/right_pupil.png");
 
-    /** Cat model is 13 px tall (0.8125 blocks) between its feet and ears. */
     private static final float CAT_MODEL_HEIGHT = 0.8125f;
 
     private static final int TEXT_NARRATOR = 0xFFFFFF;
     private static final int TEXT_PLAYER = 0xBFD0E6;
     private static final int TEXT_CAT = 0xF2D8A2;
-
-    // ── Starfield ────────────────────────────────────────────────────────────
 
     private static final class Star {
         float x;
@@ -88,10 +75,6 @@ public final class IntroSceneRenderer {
     private final List<Star> heroes = new ArrayList<>();
     private boolean built;
 
-    /**
-     * Loads everything the scene needs up front (cat model, textures) so the
-     * first frame of the candle reveal does not stall on resource loading.
-     */
     public void preload() {
         Minecraft mc = Minecraft.getInstance();
         CatModelCache.getOrBake(mc);
@@ -107,8 +90,6 @@ public final class IntroSceneRenderer {
             mc.getTextureManager().getTexture(texture);
         }
     }
-
-    // ── Public entry point ───────────────────────────────────────────────────
 
     public void render(GuiGraphics gfx, float time, float animationTime,
                        int width, int height, String playerName) {
@@ -129,8 +110,6 @@ public final class IntroSceneRenderer {
         gfx.pose().popPose();
     }
 
-    // ── Background: void + candle ────────────────────────────────────────────
-
     private void renderVoid(GuiGraphics gfx, float time, float animationTime,
                             int width, int height) {
         float w = width;
@@ -141,7 +120,6 @@ public final class IntroSceneRenderer {
         float starFade = smooth(0.0F, CutsceneScript.STARS_FULL - 0.4F, time);
 
         if (starFade > 0.002F) {
-            // Soft nebulae, slowly drifting.
             this.drawGlow(gfx, w * 0.02F, h * 0.00F + Mth.sin(animationTime * 0.07F) * 10.0F,
                     w * 0.95F, h * 0.85F, argb(0.11F * starFade, 70, 84, 150));
             this.drawGlow(gfx, w * 0.42F, -h * 0.12F + Mth.cos(animationTime * 0.05F) * 12.0F,
@@ -149,7 +127,6 @@ public final class IntroSceneRenderer {
             this.drawGlow(gfx, w * 0.10F, h * 0.35F,
                     w * 1.0F, h * 0.9F, argb(0.07F * starFade, 40, 92, 132));
 
-            // Stars.
             for (Star star : this.stars) {
                 float twinkle = 0.55F + 0.45F * Mth.sin(animationTime * star.speed + star.phase);
                 float alpha = starFade * star.brightness * twinkle;
@@ -162,7 +139,6 @@ public final class IntroSceneRenderer {
                 gfx.fill(x, y, x + size, y + size, argb(alpha, star.r, star.g, star.b));
             }
 
-            // A handful of brighter stars with a soft halo.
             for (Star star : this.heroes) {
                 float twinkle = 0.6F + 0.4F * Mth.sin(animationTime * star.speed + star.phase);
                 float alpha = starFade * twinkle;
@@ -191,9 +167,6 @@ public final class IntroSceneRenderer {
                 + 0.04F * Mth.sin(animationTime * 23.7F + 1.7F);
         float glow = intensity * flicker;
 
-        // Warm pools of light: the floor pool spans the whole screen (and a bit
-        // beyond, so the radial fall-off never shows an edge), plus a tighter
-        // pool at the flame.
         this.drawGlow(gfx, -w * 0.15F, floor - h * 0.12F, w * 1.30F, h * 0.26F,
                 argb(0.30F * glow, 255, 148, 62));
         this.drawGlow(gfx, x - w * 0.12F, floor - h * 0.28F, w * 0.24F, h * 0.34F,
@@ -201,13 +174,11 @@ public final class IntroSceneRenderer {
         this.drawGlow(gfx, x - 90.0F, floor - 150.0F, 180.0F, 190.0F,
                 argb(0.32F * glow, 255, 176, 92));
 
-        // Light on the floor: full-width, fades in with the flame instead of popping.
         gfx.fillGradient(0, (int) (floor - h * 0.05F), (int) w, (int) floor,
                 argb(0.0F, 255, 170, 90), argb(0.10F * glow, 255, 170, 90));
         gfx.fillGradient(0, (int) floor, (int) w, (int) (floor + h * 0.155F),
                 argb(0.20F * glow, 255, 192, 122), argb(0.0F, 255, 192, 122));
 
-        // ── Candle body ──────────────────────────────────────────────────────
         float height = h * (0.095F + 0.01F * Mth.sin(animationTime * 0.6F));
         float top = floor - height;
         int bodyW = Math.max(10, (int) (w * 0.011F));
@@ -219,16 +190,13 @@ public final class IntroSceneRenderer {
                 0xFFC8B896);
         gfx.fill((int) (x - bodyW), (int) top, (int) (x + bodyW), (int) top + 5, 0xFFF8F0DE);
 
-        // Wax drips down one side.
         gfx.fill((int) (x - bodyW * 0.7F), (int) top + 4, (int) (x - bodyW * 0.3F),
                 (int) (top + height * 0.26F), 0xFFF2E6CF);
         gfx.fill((int) (x + bodyW * 0.1F), (int) top + 4, (int) (x + bodyW * 0.45F),
                 (int) (top + height * 0.16F), 0xFFEDE0C7);
 
-        // Wick.
         gfx.fill((int) (x - 1), (int) top - 8, (int) x + 1, (int) top + 1, 0xFF241A12);
 
-        // ── Flame ────────────────────────────────────────────────────────────
         float flameH = 30.0F * (0.92F + 0.10F * Mth.sin(animationTime * 13.1F));
         float flameW = 8.0F;
         float flameBase = top - 6.0F;
@@ -247,7 +215,6 @@ public final class IntroSceneRenderer {
         gfx.fill((int) (x - 3), (int) flameBase - 5, (int) (x + 3), (int) flameBase,
                 argb(0.75F * glow, 130, 176, 255));
 
-        // ── Dust motes drifting up through the light ─────────────────────────
         for (int i = 0; i < 26; i++) {
             float seed = ((i * 47) % 101) / 101.0F;
             float speed = 0.035F + (i % 6) * 0.0065F;
@@ -260,14 +227,11 @@ public final class IntroSceneRenderer {
                     argb(alpha, 255, 214, 150));
         }
 
-        // Faint stars keep twinkling behind the light.
         if (starFade > 0.01F) {
             this.drawGlow(gfx, w * 0.55F, h * 0.05F, w * 0.6F, h * 0.6F,
                     argb(0.06F * starFade, 90, 110, 190));
         }
     }
-
-    // ── The cat ──────────────────────────────────────────────────────────────
 
     private void renderCat(GuiGraphics gfx, float time, float animationTime,
                            int width, int height) {
@@ -285,7 +249,6 @@ public final class IntroSceneRenderer {
 
         model.root().getAllParts().forEach(ModelPart::resetPose);
 
-        // Gentle idle: slow head sway, breathing bob and a lazy tail.
         float headYaw = -7.0F + 4.0F * Mth.sin(animationTime * 0.55F);
         float headPitch = 2.0F + 1.8F * Mth.sin(animationTime * 0.37F);
         model.applyHeadLook(headYaw, headPitch);
@@ -304,8 +267,6 @@ public final class IntroSceneRenderer {
         PoseStack pose = gfx.pose();
         pose.pushPose();
 
-        // Same sequence as InventoryScreen#renderEntityInInventory, followed by
-        // LivingEntityRenderer's model-space flip + 1.501 block offset.
         pose.translate(cx, groundY, 50.0F);
         pose.scale(scale, scale, -scale);
         pose.mulPose(Axis.ZP.rotationDegrees(180.0F));
@@ -324,7 +285,6 @@ public final class IntroSceneRenderer {
             model.renderToBuffer(pose, body, light, OverlayTexture.NO_OVERLAY,
                     brightness, brightness * 0.955F, brightness * 0.885F, 1.0F);
 
-            // Eyes: additive pale-blue sclera, then near-black pupils.
             float eyes = smooth(0.35F, 1.0F, appear);
             if (eyes > 0.01F) {
                 ModelPart head = model.getHead();
@@ -345,7 +305,6 @@ public final class IntroSceneRenderer {
                         0.04F * pupil, 0.045F * pupil, 0.07F * pupil, 1.0F);
             }
 
-            // Must be drawn while the inventory lighting is still active.
             gfx.flush();
         } finally {
             Lighting.setupFor3DItems();
@@ -353,20 +312,10 @@ public final class IntroSceneRenderer {
         }
     }
 
-    // ── Customize-screen preview ─────────────────────────────────────────────
-
-    /** Degrees the preview cat's body is turned (negative = faces screen-right). */
     private static final float PREVIEW_BODY_YAW = -32.0F;
-    /** Degrees the head turns back towards the viewer, relative to the body. */
     private static final float PREVIEW_HEAD_YAW = 22.0F;
-    /** Middle of the cat's length (head to tail tip) along the model's z axis, in blocks. */
     private static final float PREVIEW_CENTER_Z = 6.5F / 16.0F;
 
-    /**
-     * Draws the real cat model inside a rectangle, tinted with the chosen pelt
-     * and eye colours (all {@code 0xAARRGGBB}; only RGB is used), in a slow
-     * three-quarter idle so the face, eyes and tail are all visible.
-     */
     public void renderCatPreview(GuiGraphics gfx, int x, int y, int w, int h,
                                  int pelt, String pattern,
                                  int sclera, int leftEye, int rightEye,
@@ -389,7 +338,6 @@ public final class IntroSceneRenderer {
         ModelPart tail2 = model.root().getChild("tail2");
         tail2.yRot = 0.26F * Mth.sin(animationTime * 1.05F + 0.7F);
 
-        // The cat is about 2.1 blocks long in this pose and 0.8125 tall.
         float scale = Math.min(0.82F * w / 2.1F, 0.70F * h / CAT_MODEL_HEIGHT);
         float catHeight = scale * CAT_MODEL_HEIGHT;
         float cx = x + w / 2.0F;
@@ -397,7 +345,6 @@ public final class IntroSceneRenderer {
 
         gfx.enableScissor(x + 1, y + 1, x + w - 1, y + h - 1);
 
-        // Soft light behind the cat and a faint pool under its paws.
         this.drawGlow(gfx, cx - w * 0.42F, y + h * 0.10F, w * 0.84F, h * 0.80F,
                 argb(0.10F, 150, 175, 225));
         this.drawGlow(gfx, cx - w * 0.36F, groundY - h * 0.06F, w * 0.72F, h * 0.12F,
@@ -406,8 +353,6 @@ public final class IntroSceneRenderer {
         PoseStack pose = gfx.pose();
         pose.pushPose();
 
-        // Same orientation as the cutscene cat (model-space flip cancels the
-        // GUI's), then a turn about the middle of the cat's body.
         pose.translate(cx, groundY, 50.0F);
         pose.scale(scale, scale, -scale);
         pose.translate(0.0F, -1.501F, 0.0F);
@@ -421,9 +366,6 @@ public final class IntroSceneRenderer {
         try {
             Lighting.setupForEntityInInventory();
 
-            // A patterned coat uses its painted texture with a soft tint; a solid
-            // coat is the plain white texture tinted by the pelt colour (this
-            // mirrors CatSkinHelper.resolve, which the in-game cat uses).
             ResourceLocation patternTexture = CatSkinHelper.patternTexture(pattern);
             float[] tint = patternTexture != null
                     ? PeltData.softTint(pelt)
@@ -451,7 +393,6 @@ public final class IntroSceneRenderer {
             head.render(pose, right, light, OverlayTexture.NO_OVERLAY,
                     channel(rightEye, 16), channel(rightEye, 8), channel(rightEye, 0), 1.0F);
 
-            // Must be flushed while the inventory lighting and the scissor are active.
             gfx.flush();
         } finally {
             Lighting.setupFor3DItems();
@@ -464,8 +405,6 @@ public final class IntroSceneRenderer {
         return ((rgb >> shift) & 0xFF) / 255.0F;
     }
 
-    // ── Foreground: vignette, text, letterbox ────────────────────────────────
-
     public void renderForeground(GuiGraphics gfx, float time, int width, int height,
                                  String playerName) {
         this.renderFrame(gfx, width, height);
@@ -476,36 +415,27 @@ public final class IntroSceneRenderer {
         this.renderDialogue(gfx, time, width, height, dialogueY, playerName);
     }
 
-    /**
-     * Draws the cinematic vignette, dialogue shading and letterbox bars. The
-     * rebirth menus lay themselves out between these bars.
-     */
     public void renderFrame(GuiGraphics gfx, int width, int height) {
         this.renderVignette(gfx, width, height);
 
         int bar = barHeight(height);
         int dialogueY = dialogueY(height);
 
-        // Shading behind the dialogue so it reads over the candlelight.
         gfx.fillGradient(0, dialogueY - 26, width, height - bar + 2,
                 0x00000000, 0x90000000);
 
-        // Cinematic bars.
         gfx.fill(0, 0, width, bar, 0xFF000000);
         gfx.fill(0, height - bar, width, height + 1, 0xFF000000);
     }
 
-    /** Height of the top/bottom cinematic bars for a given GUI height. */
     public static int barHeight(int height) {
         return Mth.clamp((int) (height * 0.095F), 28, 64);
     }
 
-    /** Baseline of a dialogue line, kept inside the letterbox. */
     public static int dialogueY(int height) {
         return height - barHeight(height) - 70;
     }
 
-    /** The cinematic vignette, drawn over whatever scene is on screen. */
     public void renderVignette(GuiGraphics gfx, int width, int height) {
         this.drawTextured(gfx, VIGNETTE, 0.0F, 0.0F, width, height, 0xFFFFFFFF);
     }
@@ -580,8 +510,6 @@ public final class IntroSceneRenderer {
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
     private void buildStarfield() {
         Random random = new Random(0xC0FFEE);
         for (int i = 0; i < 230; i++) {
@@ -629,17 +557,11 @@ public final class IntroSceneRenderer {
         }
     }
 
-    /** Draws a tinted, texture-alpha-blended quad immediately. */
     private void drawTextured(GuiGraphics gfx, ResourceLocation texture,
                               float x, float y, float w, float h, int color) {
         this.drawTextured(gfx, texture, x, y, w, h, color, 0.0F, 0.0F, 1.0F, 1.0F);
     }
 
-    /**
-     * Draws a tinted, texture-alpha-blended quad immediately, with source UVs
-     * taken from ({@code u}, {@code v}) to ({@code u2}, {@code v2}) so the texture
-     * can be scaled without being stretched.
-     */
     private void drawTextured(GuiGraphics gfx, ResourceLocation texture,
                               float x, float y, float w, float h, int color,
                               float u, float v, float u2, float v2) {
@@ -647,8 +569,6 @@ public final class IntroSceneRenderer {
             return;
         }
 
-        // GuiGraphics#fill/fillGradient only queue their vertices; flush them
-        // first so the immediate textured quad keeps the intended paint order.
         gfx.flush();
 
         RenderSystem.setShaderTexture(0, texture);
@@ -673,15 +593,10 @@ public final class IntroSceneRenderer {
         RenderSystem.disableBlend();
     }
 
-    /**
-     * Draws the whole cloud texture into the given rectangle. Callers keep the
-     * 768x1024 aspect ratio, so the artwork is never stretched or cropped.
-     */
     public void drawCloud(GuiGraphics gfx, float x, float y, float w, float h) {
         this.drawTextured(gfx, CLOUD, x, y, w, h, 0xFFFFFFFF);
     }
 
-    /** Warm halo + accent line that marks the cloud under the cursor. */
     public void drawCloudHover(GuiGraphics gfx, float x, float y, float w, float h) {
         float cx = x + w * 0.5F;
         float cy = y + h * 0.46F;
@@ -729,7 +644,6 @@ public final class IntroSceneRenderer {
         return text.substring(0, Math.min(count, text.length()));
     }
 
-    /** Greedy word-wrap that keeps the layout stable while typing. */
     private static List<String> wrap(Font font, String text, int maxWidth) {
         List<String> lines = new ArrayList<>();
         StringBuilder current = new StringBuilder();

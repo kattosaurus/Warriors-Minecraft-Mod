@@ -5,12 +5,9 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 
-/** Saving, loading and sending {@link ClanConfig}s. */
 public final class ClanConfigIO {
 
     private ClanConfigIO() {}
-
-    // ── NBT (saved with the world) ───────────────────────────────────────────
 
     public static CompoundTag toNbt(ClanConfig config) {
         CompoundTag tag = new CompoundTag();
@@ -46,8 +43,6 @@ public final class ClanConfigIO {
         config.sanitize();
         return config;
     }
-
-    // ── Network ──────────────────────────────────────────────────────────────
 
     public static void write(FriendlyByteBuf buf, ClanConfig config) {
         buf.writeBoolean(config.isLocked());

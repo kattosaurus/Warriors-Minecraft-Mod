@@ -11,47 +11,17 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/**
- * Registers /eye commands so server ops (or any player) can set their own
- * eye textures / colours at runtime. Textures must exist at:
- *   assets/warriors/textures/entity/cat_player/<key>.png
- *
- * Commands:
- *   /eye color <colour>            – colour both pupils
- *   /eye pupil color <colour>      – colour both pupils
- *   /eye pupil left color <colour> – colour only the left pupil
- *   /eye pupil right color <colour>– colour only the right pupil
- *   /eye sclera color <colour>     – colour the sclera
- *   /eye sclera random             – roll a new random realistic sclera colour
- *   /eye random                    – shorthand for /eye sclera random
- *
- *   /eye pupil <value>             – colour if value parses as a colour, else texture
- *   /eye pupil texture <key>       – change both pupil textures
- *   /eye pupil left texture <key>  – change only the left pupil texture
- *   /eye pupil right texture <key> – change only the right pupil texture
- *   /eye sclera <value>            – colour if value parses as a colour, else texture
- *   /eye sclera texture <key>      – change the sclera / white-of-eye texture
- *
- *   /eye reset                     – white sclera + random pupil colours
- *
- * Colours accept #RRGGBB, RRGGBB, 0xRRGGBB or a vanilla name (red, gold, …).
- * Every mutation is broadcast to the player and to everyone tracking them,
- * because Forge persistent data is not part of the normal entity sync.
- */
 public class EyeCommands {
 
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
             Commands.literal("eye")
-                // /eye color <colour> – both pupils
                 .then(Commands.literal("color")
                     .then(Commands.argument("value", StringArgumentType.greedyString())
                         .executes(ctx -> setBothPupilColors(ctx, StringArgumentType.getString(ctx, "value")))))
-                // /eye random – sclera
                 .then(Commands.literal("random")
                     .executes(this::randomizeSclera))
-                // /eye sclera ...
                 .then(Commands.literal("sclera")
                     .then(Commands.literal("color")
                         .then(Commands.argument("value", StringArgumentType.greedyString())
@@ -63,17 +33,13 @@ public class EyeCommands {
                             .executes(ctx -> setScleraTexture(ctx, StringArgumentType.getString(ctx, "key")))))
                     .then(Commands.argument("key", StringArgumentType.word())
                         .executes(ctx -> setScleraOrColor(ctx, StringArgumentType.getString(ctx, "key")))))
-                // /eye pupil ...
                 .then(Commands.literal("pupil")
-                    // /eye pupil color <colour> – both pupils
                     .then(Commands.literal("color")
                         .then(Commands.argument("value", StringArgumentType.greedyString())
                             .executes(ctx -> setBothPupilColors(ctx, StringArgumentType.getString(ctx, "value")))))
-                    // /eye pupil texture <key> – both pupils
                     .then(Commands.literal("texture")
                         .then(Commands.argument("key", StringArgumentType.word())
                             .executes(ctx -> setBothPupilTextures(ctx, StringArgumentType.getString(ctx, "key")))))
-                    // /eye pupil left ...
                     .then(Commands.literal("left")
                         .then(Commands.literal("color")
                             .then(Commands.argument("value", StringArgumentType.greedyString())
@@ -84,7 +50,6 @@ public class EyeCommands {
                                 .executes(ctx -> setLeftPupilTexture(ctx, StringArgumentType.getString(ctx, "key")))))
                         .then(Commands.argument("key", StringArgumentType.word())
                             .executes(ctx -> setLeftPupilOrColor(ctx, StringArgumentType.getString(ctx, "key")))))
-                    // /eye pupil right ...
                     .then(Commands.literal("right")
                         .then(Commands.literal("color")
                             .then(Commands.argument("value", StringArgumentType.greedyString())
@@ -95,18 +60,13 @@ public class EyeCommands {
                                 .executes(ctx -> setRightPupilTexture(ctx, StringArgumentType.getString(ctx, "key")))))
                         .then(Commands.argument("key", StringArgumentType.word())
                             .executes(ctx -> setRightPupilOrColor(ctx, StringArgumentType.getString(ctx, "key")))))
-                    // /eye pupil <value> – both pupils, colour if it parses as one
                     .then(Commands.argument("key", StringArgumentType.word())
                         .executes(ctx -> setPupilOrColor(ctx, StringArgumentType.getString(ctx, "key")))))
-                // /eye reset
                 .then(Commands.literal("reset")
                     .executes(this::resetEyes))
         );
     }
 
-    // ── Sclera ────────────────────────────────────────────────────────────────
-
-    /** {@code /eye sclera <value>}: colour names/hex win, otherwise a texture key. */
     private int setScleraOrColor(CommandContext<CommandSourceStack> ctx, String value) {
         if (isClearKeyword(value) || EyeData.isValidColor(value)) {
             return setScleraColor(ctx, value);
@@ -161,9 +121,6 @@ public class EyeCommands {
         return 1;
     }
 
-    // ── Pupils ────────────────────────────────────────────────────────────────
-
-    /** {@code /eye pupil <value>}: colour names/hex win, otherwise a texture key. */
     private int setPupilOrColor(CommandContext<CommandSourceStack> ctx, String value) {
         if (isClearKeyword(value) || EyeData.isValidColor(value)) {
             return setBothPupilColors(ctx, value);
@@ -262,15 +219,12 @@ public class EyeCommands {
         return 1;
     }
 
-    // ── Reset ─────────────────────────────────────────────────────────────────
-
     private int resetEyes(CommandContext<CommandSourceStack> ctx) {
         ServerPlayer player = getPlayer(ctx);
         if (player == null) return 0;
         EyeData.setSclera(player,      EyeData.DEFAULT_SCLERA);
         EyeData.setLeftPupil(player,   EyeData.DEFAULT_LEFT_PUPIL);
         EyeData.setRightPupil(player,  EyeData.DEFAULT_RIGHT_PUPIL);
-        // Defaults: white sclera, random dark pupil colour.
         String pupilColor = EyeData.getRandomPupilColor();
         EyeData.clearScleraColor(player);
         EyeData.setPupilColors(player, pupilColor);
@@ -280,8 +234,6 @@ public class EyeCommands {
                         + pupilColor + ")."), false);
         return 1;
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static boolean isClearKeyword(String value) {
         String trimmed = value.trim();
@@ -296,10 +248,6 @@ public class EyeCommands {
         return 0;
     }
 
-    /**
-     * Validates a texture key and returns its normalised form, or null after
-     * sending a helpful error. This prevents missing-texture checkerboards.
-     */
     private static String requireTextureKey(CommandContext<CommandSourceStack> ctx, String key) {
         if (EyeData.isValidTextureKey(key)) {
             return EyeData.sanitizeTextureKey(key);

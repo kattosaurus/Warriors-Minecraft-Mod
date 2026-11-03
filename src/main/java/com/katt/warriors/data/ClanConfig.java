@@ -7,26 +7,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-/**
- * How the clanlands are laid out: one slot per clan, each with a name, a kind
- * of terrain, a size and a colour, and whether the clan exists at all.
- *
- * <p>The slots are the eight {@link Clan}s, so ids, scents and saved player
- * data stay stable however the clans are customised. An empty name means "use
- * the default (translated) name".</p>
- */
 public final class ClanConfig {
 
     public static final int MAX_NAME_LENGTH = 20;
-    /** At least this many clans always exist. */
     public static final int MIN_ENABLED = 2;
 
-    /** Colours a clan can use for its name. */
     public static final int[] PALETTE = {
             0x7BC96F, 0x5BA7E0, 0xA78BD9, 0xE8C170, 0xE48AAE, 0xE8855C, 0xC9CED6, 0x9FD9C8
     };
 
-    /** Terrain each clan has by default (in {@link Clan} order). */
     private static final Terrain[] DEFAULT_TERRAIN = {
             Terrain.FOREST, Terrain.LAKE, Terrain.MARSH, Terrain.MOOR,
             Terrain.MOUNTAIN, Terrain.TOWN, Terrain.SCRUB, Terrain.TAIGA
@@ -63,14 +52,11 @@ public final class ClanConfig {
         }
     }
 
-    /** One clan's settings. */
     public static final class Slot {
-        /** Custom name; empty means the default name. */
         public String name = "";
         public Terrain terrain = Terrain.FOREST;
         public boolean enabled = true;
         public Size size = Size.NORMAL;
-        /** Index into {@link #PALETTE}. */
         public int colour;
 
         public Slot copy() {
@@ -117,7 +103,6 @@ public final class ClanConfig {
         return config;
     }
 
-    /** An empty config for deserialisers to fill in. */
     public static ClanConfig blank() {
         return defaults();
     }
@@ -166,7 +151,6 @@ public final class ClanConfig {
         return list;
     }
 
-    /** The first enabled clan, used when a choice names one that no longer exists. */
     public Clan firstEnabled() {
         for (Clan clan : Clan.values()) {
             if (isEnabled(clan)) {
@@ -176,7 +160,6 @@ public final class ClanConfig {
         return Clan.THUNDERCLAN;
     }
 
-    /** Adds one clan (the lowest-numbered missing one). */
     public void addClan() {
         for (Slot slot : slots) {
             if (!slot.enabled) {
@@ -186,7 +169,6 @@ public final class ClanConfig {
         }
     }
 
-    /** Removes one clan (the highest-numbered existing one), keeping the minimum. */
     public void removeClan() {
         if (enabledCount() <= MIN_ENABLED) {
             return;
@@ -208,7 +190,6 @@ public final class ClanConfig {
         return copy;
     }
 
-    /** Cleans up anything that came from outside (names, ranges, minimum clans). */
     public void sanitize() {
         for (Slot slot : slots) {
             slot.name = cleanName(slot.name);
@@ -239,7 +220,6 @@ public final class ClanConfig {
         return name.length() > MAX_NAME_LENGTH ? name.substring(0, MAX_NAME_LENGTH).strip() : name;
     }
 
-    /** Equality of the settings (the locked flag is not a setting). */
     public boolean sameSettings(ClanConfig other) {
         for (int i = 0; i < slots.length; i++) {
             if (!slots[i].equals(other.slots[i])) {

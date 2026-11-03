@@ -31,16 +31,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 
-/**
- * Chunk generator for the clanlands valley.
- *
- * <p>Terrain is built from {@link ClanlandsTerrain}: deepslate and stone, a few
- * dirt layers, the surface block and water up to sea level in rivers and lakes. Vanilla biome decoration (trees, flowers, …) still runs on top, so the
- * regions feel alive without a full noise-based generator.</p>
- *
- * <p>Structures and natural mob spawns are disabled: the valley is a peaceful
- * warrior's home, not a dungeon.</p>
- */
 public class ClanlandsChunkGenerator extends ChunkGenerator {
 
     public static final Codec<ClanlandsChunkGenerator> CODEC =
@@ -68,7 +58,6 @@ public class ClanlandsChunkGenerator extends ChunkGenerator {
         return CODEC;
     }
 
-    /** No structure sets: keeps villages and strongholds out of the valley. */
     @Override
     public ChunkGeneratorStructureState createState(HolderLookup<StructureSet> structureSets,
                                                     RandomState randomState, long seed) {
@@ -131,11 +120,8 @@ public class ClanlandsChunkGenerator extends ChunkGenerator {
             }
         }
 
-        // The Kittypet village is written straight into the chunks it covers,
-        // on top of the levelled terrain, so it is there the moment they exist.
         KittypetVillage.generate(chunk, oceanFloor, worldSurface);
 
-        // Likewise the clan camps (never for strays and rogues).
         ClanCamps.generate(chunk, oceanFloor, worldSurface);
 
         return CompletableFuture.completedFuture(chunk);
@@ -144,19 +130,16 @@ public class ClanlandsChunkGenerator extends ChunkGenerator {
     @Override
     public void buildSurface(WorldGenRegion region, StructureManager structureManager,
                              RandomState randomState, ChunkAccess chunk) {
-        // Surfaces are written in fillFromNoise so they match the heightmaps.
     }
 
     @Override
     public void applyCarvers(WorldGenRegion region, long seed, RandomState randomState,
                              BiomeManager biomeManager, StructureManager structureManager,
                              ChunkAccess chunk, GenerationStep.Carving step) {
-        // No caves or canyons.
     }
 
     @Override
     public void spawnOriginalMobs(WorldGenRegion region) {
-        // Natural spawning is handled (and denied) by RealisticSpawnHandler.
     }
 
     @Override
@@ -178,7 +161,6 @@ public class ClanlandsChunkGenerator extends ChunkGenerator {
     public int getBaseHeight(int x, int z, Heightmap.Types type,
                              LevelHeightAccessor heightAccessor, RandomState randomState) {
         int groundY = ClanlandsTerrain.columnAt(x, z).groundY();
-        // In the river ring the top of the column is the water surface.
         return Math.max(groundY, ClanlandsTerrain.SEA_LEVEL) + 1;
     }
 
@@ -219,7 +201,6 @@ public class ClanlandsChunkGenerator extends ChunkGenerator {
         return new NoiseColumn(minY, states);
     }
 
-    /** No monsters spawn naturally; peaceful animals are welcome. */
     @Override
     public WeightedRandomList<MobSpawnSettings.SpawnerData> getMobsAt(
             Holder<Biome> biome, StructureManager structureManager,

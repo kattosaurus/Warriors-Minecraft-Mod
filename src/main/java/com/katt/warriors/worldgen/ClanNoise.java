@@ -1,12 +1,5 @@
 package com.katt.warriors.worldgen;
 
-/**
- * Small, fixed-seed gradient noise used by the clanlands terrain.
- *
- * <p>The clanlands are the same for every world, so the noise is a pure
- * function of its inputs: no world seed, no state, safe to call from any
- * thread while chunks generate.</p>
- */
 final class ClanNoise {
 
     private static final double[][] GRADIENTS = {
@@ -36,7 +29,6 @@ final class ClanNoise {
         return g[0] * dx + g[1] * dz;
     }
 
-    /** Perlin noise, roughly in [-1, 1]. */
     static double perlin(double x, double z, int seed) {
         int x0 = (int) Math.floor(x);
         int z0 = (int) Math.floor(z);
@@ -55,7 +47,6 @@ final class ClanNoise {
         return (nx0 + v * (nx1 - nx0)) * 1.4142;
     }
 
-    /** Fractal noise (several octaves), normalised to roughly [-1, 1]. */
     static double fbm(double x, double z, int octaves, int seed) {
         double sum = 0.0;
         double amplitude = 1.0;
@@ -70,7 +61,6 @@ final class ClanNoise {
         return sum / total;
     }
 
-    /** Ridged noise in [0, 1]: sharp crests, good for mountain ranges. */
     static double ridged(double x, double z, int octaves, int seed) {
         double sum = 0.0;
         double amplitude = 1.0;
@@ -94,7 +84,6 @@ final class ClanNoise {
         return a + (b - a) * t;
     }
 
-    /** Smoothstep: 0 below {@code edge0}, 1 above {@code edge1}. */
     static double smooth(double edge0, double edge1, double x) {
         double t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
         return t * t * (3.0 - 2.0 * t);

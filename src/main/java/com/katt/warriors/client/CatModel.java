@@ -18,17 +18,10 @@ import net.minecraft.world.entity.AnimationState;
 import net.minecraft.world.entity.Entity;
 import org.joml.Vector3f;
 
-/**
- * Custom cat player model with walk and run animations from assets/model.java.
- * Provides public animate wrappers because HierarchicalModel#animate() is protected.
- */
 public class CatModel<T extends Entity> extends HierarchicalModel<T> {
 
-    /** Layer location registered in ClientModEvents. */
     public static final ModelLayerLocation LAYER_LOCATION =
             new ModelLayerLocation(new ResourceLocation(Warriors.MODID, "cat_player"), "main");
-
-    // ── Animation definitions (from assets/model.java) ────────────────────────
 
     public static final AnimationDefinition WALK = AnimationDefinition.Builder.withLength(1.0F).looping()
             .addAnimation("head", new AnimationChannel(AnimationChannel.Targets.POSITION,
@@ -169,8 +162,6 @@ public class CatModel<T extends Entity> extends HierarchicalModel<T> {
             ))
             .build();
 
-    // ── Model parts ───────────────────────────────────────────────────────────
-
     private final ModelPart root;
     private final ModelPart head;
     private final ModelPart body;
@@ -193,7 +184,6 @@ public class CatModel<T extends Entity> extends HierarchicalModel<T> {
         this.tail2         = root.getChild("tail2");
     }
 
-    /** Called by Warriors.ClientModEvents to register the layer geometry. */
     public static LayerDefinition createBodyLayer() {
         MeshDefinition meshdefinition = new MeshDefinition();
         PartDefinition partdefinition = meshdefinition.getRoot();
@@ -272,8 +262,6 @@ public class CatModel<T extends Entity> extends HierarchicalModel<T> {
         return LayerDefinition.create(meshdefinition, 64, 64);
     }
 
-    // ── HierarchicalModel ─────────────────────────────────────────────────────
-
     @Override
     public ModelPart root() {
         return root;
@@ -282,22 +270,9 @@ public class CatModel<T extends Entity> extends HierarchicalModel<T> {
     @Override
     public void setupAnim(T entity, float limbSwing, float limbSwingAmount,
                           float ageInTicks, float netHeadYaw, float headPitch) {
-        // Animation is driven externally via the public animate wrappers below.
         applyHeadLook(netHeadYaw, headPitch);
     }
 
-    /**
-     * Turn the head towards the player's look direction.
-     *
-     * <p>The walk / run clips already animate the head (a bob and a nod), so
-     * this is applied <em>after</em> them as an additive offset, exactly like
-     * vanilla's player model does. The model is flipped on X/Y by the renderer
-     * (see CatPlayerRenderHandler), which is why the vanilla signs and the
-     * usual -75..75 degree head-yaw clamp can be used unchanged.</p>
-     *
-     * @param netHeadYaw head yaw relative to the body, in degrees
-     * @param headPitch  head pitch, in degrees (positive = looking down)
-     */
     public void applyHeadLook(float netHeadYaw, float headPitch) {
         this.head.yRot += Mth.clamp(netHeadYaw, -75.0F, 75.0F) * Mth.DEG_TO_RAD;
         this.head.xRot += headPitch * Mth.DEG_TO_RAD;
@@ -317,37 +292,18 @@ public class CatModel<T extends Entity> extends HierarchicalModel<T> {
         tail2.render(poseStack, vertexConsumer, packedLight, packedOverlay, red, green, blue, alpha);
     }
 
-    // ── Public animation helpers ──────────────────────────────────────────────
-    //
-    // HierarchicalModel#animate() is protected, and its fourth parameter is the
-    // animation *playback speed*, not an amplitude weight. To cross-fade walk
-    // into run we call KeyframeAnimations.animate directly, whose fourth
-    // parameter does scale every keyframe value.
-
-    /** Scratch vector reused by KeyframeAnimations.animate (as vanilla does). */
     private static final Vector3f ANIMATION_VECTOR = new Vector3f();
 
-    /**
-     * Apply the walk animation with the given blend weight.
-     * @param state      the AnimationState managing elapsed time
-     * @param ageInTicks current game time in ticks (used by AnimationState#updateTime)
-     * @param weight     blend weight, 0 = no effect, 1 = full amplitude
-     */
     public void animateWalk(AnimationState state, float ageInTicks, float weight) {
         animateWeighted(state, WALK, ageInTicks, weight);
     }
 
-    /**
-     * Apply the run animation with the given blend weight.
-     */
     public void animateRun(AnimationState state, float ageInTicks, float weight) {
         animateWeighted(state, RUN, ageInTicks, weight);
     }
 
     private void animateWeighted(AnimationState state, AnimationDefinition definition,
                                  float ageInTicks, float weight) {
-        // Advance the clip at normal playback speed even when its current
-        // weight is zero, so it is already at a sensible phase when it fades in.
         state.updateTime(ageInTicks, 1.0F);
         if (weight <= 0.0F) {
             return;
@@ -356,6 +312,5 @@ public class CatModel<T extends Entity> extends HierarchicalModel<T> {
                 this, definition, s.getAccumulatedTime(), weight, ANIMATION_VECTOR));
     }
 
-    /** Expose head part so the eye-overlay renderer can align to it. */
     public ModelPart getHead() { return head; }
 }

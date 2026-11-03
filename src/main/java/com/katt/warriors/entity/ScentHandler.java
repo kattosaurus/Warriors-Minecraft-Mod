@@ -19,18 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Tells a cat when it crosses into another territory, by scent.
- *
- * <p>Every foreign scent starts out unknown: the first time, the cat only
- * <em>assumes</em> whose territory it is from what it smells. Each later visit
- * makes it surer, and after {@link ScentData#LEARN_VISITS} visits the scent is
- * known for good. Crossings are debounced so walking along a winding border
- * doesn't spam messages.</p>
- */
 public class ScentHandler {
 
-    /** Seconds a cat must stay in a new territory before it is announced. */
     private static final int SETTLE_SECONDS = 3;
 
     private record Pending(String territory, int seconds) {}
@@ -50,7 +40,6 @@ public class ScentHandler {
         int x = player.getBlockX();
         int z = player.getBlockZ();
 
-        // The mountains around the valley belong to nobody.
         if (ClanlandsTerrain.biomeIndexAt(x, z) == ClanlandsTerrain.RIM_BIOME) {
             return;
         }
@@ -99,7 +88,6 @@ public class ScentHandler {
 
         int visits = ScentData.recordVisit(player, territory);
         if (visits == 1) {
-            // Never smelled this before: the cat can only guess.
             thought(player, Component.translatable("warriors.scent.unknown",
                     Component.translatable(config.slot(clan).terrain.scentKey()), name));
             bar(player, Component.translatable("warriors.scent.bar.unknown"));
@@ -115,7 +103,6 @@ public class ScentHandler {
         }
     }
 
-    /** The cat's own thoughts, in grey italics. */
     private static void thought(ServerPlayer player, Component text) {
         player.sendSystemMessage(text.copy().withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
     }

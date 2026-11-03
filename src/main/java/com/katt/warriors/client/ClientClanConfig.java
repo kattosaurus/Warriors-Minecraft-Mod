@@ -2,7 +2,6 @@ package com.katt.warriors.client;
 
 import com.katt.warriors.data.ClanConfig;
 
-/** The clan layout as the client knows it (synced from the server). */
 public final class ClientClanConfig {
 
     private static ClanConfig config = ClanConfig.defaults();

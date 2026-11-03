@@ -5,11 +5,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/**
- * Shows a player's warrior name instead of their account name: above their
- * head, in chat and in death messages. Runs on both sides; the client gets the
- * name through {@code SyncAppearancePacket}.
- */
 public class CatNameHandler {
 
     @SubscribeEvent

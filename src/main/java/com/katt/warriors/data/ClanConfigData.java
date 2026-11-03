@@ -4,7 +4,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
 
-/** The world's clan layout, saved with the overworld. */
 public class ClanConfigData extends SavedData {
 
     private static final String NAME = "warriors_clans";

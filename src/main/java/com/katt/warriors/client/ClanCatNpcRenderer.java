@@ -21,20 +21,6 @@ import net.minecraft.world.entity.AnimationState;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-/**
- * Client-side renderer for {@link ClanCatNpc} entities.
- *
- * <p>Reuses the {@link CatModel} and the cat-player textures. Vanilla's
- * {@code LivingEntityRenderer} already applies the flip and the vertical
- * offset this model needs, so the renderer only adds what a player cat gets
- * from {@link CatPlayerRenderHandler}:</p>
- * <ul>
- *   <li>the coat tint (and pattern texture) from the NPC's synced data;</li>
- *   <li>the walk and run animations, blended by how fast the cat is moving;</li>
- *   <li>an eye layer (sclera and pupils) in the cat's iris colour;</li>
- *   <li>a size that follows the cat's rank (kits small, apprentices smaller than warriors).</li>
- * </ul>
- */
 public class ClanCatNpcRenderer extends MobRenderer<ClanCatNpc, ClanCatNpcRenderer.NpcCatModel> {
 
     private static final float SHADOW = 0.4f;
@@ -53,9 +39,6 @@ public class ClanCatNpcRenderer extends MobRenderer<ClanCatNpc, ClanCatNpcRender
         this.addLayer(new EyeLayer(this));
     }
 
-    // ── Texture and tint ─────────────────────────────────────────────────────
-
-    /** The painted pattern texture of this cat, or {@code null} for a solid coat. */
     private static ResourceLocation patternTexture(ClanCatNpc npc) {
         String pattern = npc.getNpcPattern();
         if (pattern == null || pattern.isEmpty() || !PeltData.isPattern(pattern)) {
@@ -70,15 +53,10 @@ public class ClanCatNpcRenderer extends MobRenderer<ClanCatNpc, ClanCatNpcRender
         if (pattern != null) {
             return pattern;
         }
-        // Solid coat: the plain white texture, tinted by getCoatTint.
         ResourceLocation white = CatSkinHelper.getWhiteTexture();
         return white != null ? white : FALLBACK;
     }
 
-    /**
-     * RGB multipliers for the NPC's coat. A painted pattern gets a softened
-     * tint (as for players); a solid coat gets the full colour.
-     */
     public static float[] getCoatTint(ClanCatNpc npc) {
         String hex = npc.getNpcPeltColor();
         if (hex == null || hex.isEmpty()) {
@@ -95,8 +73,6 @@ public class ClanCatNpcRenderer extends MobRenderer<ClanCatNpc, ClanCatNpcRender
         return tint == null ? new float[]{1.0f, 1.0f, 1.0f} : tint;
     }
 
-    // ── Rendering ────────────────────────────────────────────────────────────
-
     @Override
     public void render(ClanCatNpc npc, float entityYaw, float partialTicks,
                        PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
@@ -106,38 +82,21 @@ public class ClanCatNpcRenderer extends MobRenderer<ClanCatNpc, ClanCatNpcRender
         super.render(npc, entityYaw, partialTicks, poseStack, bufferSource, packedLight);
     }
 
-    /**
-     * Called by {@code LivingEntityRenderer#render} after it has applied the
-     * model-space flip (-1, -1, 1) that turns the Y-down model right-side-up,
-     * and before the -1.501 vertical offset that puts the feet on the ground.
-     * Scaling here keeps both correct. The name tag is drawn by vanilla after
-     * the pose is popped, so it also stays at the right height.
-     */
     @Override
     protected void scale(ClanCatNpc npc, PoseStack poseStack, float partialTick) {
         float scale = ClanCatNpc.modelScale(npc.getNpcRole());
         poseStack.scale(scale, scale, scale);
     }
 
-    // ── The model: cat model + walk/run animation + tint ────────────────────
-
-    /**
-     * {@link CatModel} for NPCs. {@code setupAnim} (called by the vanilla
-     * renderer every frame) resets the pose, turns the head and then plays the
-     * walk and run animations, blended by the cat's movement speed.
-     */
     public static final class NpcCatModel extends CatModel<ClanCatNpc> {
 
-        /** Walk and run clips of one cat. */
         private static final class Motion {
             final AnimationState walk = new AnimationState();
             final AnimationState run = new AnimationState();
         }
 
-        /** Limb-swing speed (0 to 1) above which the cat is running rather than walking. */
         private static final float RUN_FROM = 0.75F;
         private static final float RUN_FULL = 0.95F;
-        /** Limb-swing speed at which the walk animation reaches full strength. */
         private static final float WALK_FULL = 0.70F;
 
         private final Map<ClanCatNpc, Motion> motions = new WeakHashMap<>();
@@ -159,14 +118,12 @@ public class ClanCatNpcRenderer extends MobRenderer<ClanCatNpc, ClanCatNpcRender
         @Override
         public void setupAnim(ClanCatNpc npc, float limbSwing, float limbSwingAmount,
                               float ageInTicks, float netHeadYaw, float headPitch) {
-            // Resets the pose, then turns the head.
             super.setupAnim(npc, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
 
             Motion motion = this.motions.computeIfAbsent(npc, n -> new Motion());
             float run = Mth.clamp((limbSwingAmount - RUN_FROM) / (RUN_FULL - RUN_FROM), 0.0F, 1.0F);
             float walk = Mth.clamp(limbSwingAmount / WALK_FULL, 0.0F, 1.0F) * (1.0F - run);
 
-            // startIfStopped, not start: start() would restart the clip every frame.
             if (limbSwingAmount > 0.02F) {
                 motion.walk.startIfStopped(npc.tickCount);
             } else {
@@ -190,12 +147,6 @@ public class ClanCatNpcRenderer extends MobRenderer<ClanCatNpc, ClanCatNpcRender
         }
     }
 
-    // ── Eyes ─────────────────────────────────────────────────────────────────
-
-    /**
-     * Draws the sclera and the two pupils over the head, like the player's eye
-     * overlay: the sclera glows in the dark, the pupils take the cat's iris colour.
-     */
     private static final class EyeLayer extends RenderLayer<ClanCatNpc, NpcCatModel> {
 
         EyeLayer(RenderLayerParent<ClanCatNpc, NpcCatModel> parent) {
@@ -225,7 +176,6 @@ public class ClanCatNpcRenderer extends MobRenderer<ClanCatNpc, ClanCatNpcRender
                     packedLight, OverlayTexture.NO_OVERLAY, iris[0], iris[1], iris[2], 1.0F);
         }
 
-        /** RGB multipliers for a colour; white when unset or invalid. */
         private static float[] tint(int rgb) {
             if (rgb == -1) {
                 return new float[]{1.0F, 1.0F, 1.0F};

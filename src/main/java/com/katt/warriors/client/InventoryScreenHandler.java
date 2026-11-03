@@ -10,11 +10,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/**
- * Opens a custom survival inventory screen for cats in realistic mode.
- * Vanilla's inventory.png is never drawn; only
- * assets/warriors/textures/gui/inventory.png is.
- */
 public class InventoryScreenHandler {
 
     private static final ResourceLocation REALISTIC_INVENTORY =
@@ -43,10 +38,8 @@ public class InventoryScreenHandler {
             int left = getGuiLeft();
             int top = getGuiTop();
 
-            // Same call vanilla makes, just with our texture (256 x 256 file).
             g.blit(REALISTIC_INVENTORY, left, top, 0, 0, imageWidth, imageHeight);
 
-            // Player model, same position and scale as vanilla (1.20.1).
             int x = left + 51;
             int y = top + 75;
             InventoryScreen.renderEntityInInventoryFollowsMouse(

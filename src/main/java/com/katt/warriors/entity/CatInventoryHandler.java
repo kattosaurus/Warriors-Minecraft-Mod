@@ -12,28 +12,17 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/**
- * Cats in realistic mode have no inventory and wear no armor: only the hotbar
- * (what the cat holds), the offhand and the 2 × 2 crafting grid are left.
- *
- * <p>The inventory screen loses the slots (see {@link HiddenSlot}); this class
- * keeps the rest of the game honest: items are only picked up if they fit in
- * the hotbar, and anything that still ends up in a removed slot (commands,
- * dispensers, loot) is moved to the hotbar or dropped.</p>
- */
 public class CatInventoryHandler {
 
     private static final int HOTBAR = 9;
     private static final int MAIN_END = 36;
 
-    /** Swaps the removable slots of every player's inventory menu (client and server). */
     @SubscribeEvent
     public void onJoin(EntityJoinLevelEvent event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
         InventoryMenu menu = player.inventoryMenu;
-        // 5-8: armor, 9-35: the inventory. 0-4 (crafting), 36-44 (hotbar) and 45 (offhand) stay.
         for (int i = 5; i <= 35 && i < menu.slots.size(); i++) {
             Slot slot = menu.slots.get(i);
             if (!(slot instanceof HiddenSlot)) {
@@ -42,7 +31,6 @@ public class CatInventoryHandler {
         }
     }
 
-    /** Only pick things up if they fit in the hotbar. */
     @SubscribeEvent
     public void onPickup(EntityItemPickupEvent event) {
         Player player = event.getEntity();
@@ -54,7 +42,6 @@ public class CatInventoryHandler {
         }
     }
 
-    /** Anything that still lands in a removed slot is moved or dropped. */
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END
@@ -88,13 +75,11 @@ public class CatInventoryHandler {
         if (!rest.isEmpty()) {
             ItemEntity dropped = player.drop(rest, false);
             if (dropped != null) {
-                // Long enough for the cat to walk off, so it isn't picked straight back up.
                 dropped.setPickUpDelay(60);
             }
         }
     }
 
-    /** Puts as much of the stack as fits into the hotbar; returns what is left. */
     private static ItemStack addToHotbar(Inventory inventory, ItemStack stack) {
         ItemStack remaining = stack.copy();
 

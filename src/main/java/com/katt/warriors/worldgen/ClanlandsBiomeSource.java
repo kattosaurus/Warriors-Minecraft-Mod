@@ -12,14 +12,6 @@ import net.minecraft.world.level.biome.BiomeSource;
 
 import java.util.stream.Stream;
 
-/**
- * Biome source for the clanlands dimension.
- *
- * <p>The biome list is ordered to match {@link Clan} ordinals: Thunder, River,
- * Shadow, Wind, Sky, Kittypet, Stray, Rogue. Index 8 is the wild centre, 9 is
- * water (rivers, lakes and bog pools) and 10 is the mountain rim around the
- * valley. Where each applies is decided by {@link ClanlandsTerrain}.</p>
- */
 public class ClanlandsBiomeSource extends BiomeSource {
 
     public static final Codec<ClanlandsBiomeSource> CODEC =
@@ -28,10 +20,6 @@ public class ClanlandsBiomeSource extends BiomeSource {
                             .forGetter(ClanlandsBiomeSource::biomes)
             ).apply(instance, ClanlandsBiomeSource::new));
 
-    /**
-     * Biome lookups arrive one quart cell at a time with y varying fastest, so
-     * remember the last column to avoid recomputing the terrain for each of them.
-     */
     private static final ThreadLocal<int[]> LAST = ThreadLocal.withInitial(
             () -> new int[] {Integer.MIN_VALUE, Integer.MIN_VALUE, 0});
 

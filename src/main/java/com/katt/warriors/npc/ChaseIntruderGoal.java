@@ -8,14 +8,6 @@ import net.minecraft.world.phys.Vec3;
 import java.util.EnumSet;
 import java.util.Random;
 
-/**
- * Makes a clan cat NPC pursue a player who is intruding in its territory.
- *
- * <p>Each time the goal becomes active there is a {@code chanceToActivate}
- * probability it will actually start the chase (so not every NPC in the camp
- * rushes at once). The NPC sprints toward the intruder until the player leaves
- * the territory or moves far enough away.</p>
- */
 public class ChaseIntruderGoal extends Goal {
 
     private final ClanCatNpc npc;
@@ -24,7 +16,6 @@ public class ChaseIntruderGoal extends Goal {
     private final double giveUpRadius;
     private final Random rng = new Random();
 
-    /** The player currently being chased, or {@code null}. */
     private Player target;
     private int cooldown = 0;
 
@@ -43,13 +34,11 @@ public class ChaseIntruderGoal extends Goal {
             cooldown--;
             return false;
         }
-        // Scan for a nearby intruder
         Player nearest = npc.level().getNearestPlayer(npc, detectRadius);
         if (nearest == null) return false;
         if (!npc.isIntruder(nearest)) return false;
-        // Random chance: not every patrol cat rushes the intruder
         if (rng.nextFloat() >= chanceToActivate) {
-            cooldown = 100; // 5 second cooldown before trying again
+            cooldown = 100;
             return false;
         }
         target = nearest;
@@ -60,7 +49,6 @@ public class ChaseIntruderGoal extends Goal {
     public boolean canContinueToUse() {
         if (target == null || !target.isAlive()) return false;
         if (!npc.isIntruder(target)) {
-            // Player left the territory – give up and return home
             return false;
         }
         double dist = npc.distanceTo(target);
@@ -72,16 +60,15 @@ public class ChaseIntruderGoal extends Goal {
         npc.getNavigation().stop();
         npc.setSpeed(0.0f);
         target = null;
-        cooldown = 200; // 10 second cooldown after a chase
+        cooldown = 200;
     }
 
     @Override
     public void tick() {
         if (target == null) return;
         npc.getLookControl().setLookAt(target, 30.0f, 30.0f);
-        npc.getNavigation().moveTo(target, 1.4); // Sprint speed factor
+        npc.getNavigation().moveTo(target, 1.4);
 
-        // Try to attack if in melee range
         if (npc.distanceTo(target) < 2.0) {
             npc.doHurtTarget(target);
         }

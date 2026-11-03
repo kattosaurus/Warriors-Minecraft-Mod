@@ -19,17 +19,6 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/**
- * Client → server: the player finished the rebirth flow.
- *
- * <p>The packet carries every choice in one go so the server can apply the
- * appearance, record the decision, and (for realistic mode) move the player into
- * the clanlands dimension atomically. Colour strings are validated before they
- * touch persistent data, and an empty string means "inherit / keep default".</p>
- *
- * <p>The eyes travel as two colours so heterochromia (a different left and
- * right iris) survives the trip to the server.</p>
- */
 public record RebirthChoicePacket(
         String mode,
         String appearance,
@@ -86,7 +75,6 @@ public record RebirthChoicePacket(
     private static void apply(ServerPlayer player, RebirthChoicePacket packet) {
         RebirthChoice.Mode mode = RebirthChoice.Mode.byId(packet.mode());
         RebirthChoice.Appearance appearance = RebirthChoice.Appearance.byId(packet.appearance());
-        // The chosen clan must exist in this world's layout.
         RebirthChoice.Clan requested = RebirthChoice.Clan.byId(packet.clan());
         RebirthChoice.Clan clan = ClanConfigManager.get().isEnabled(requested)
                 ? requested : ClanConfigManager.get().firstEnabled();
@@ -95,15 +83,12 @@ public record RebirthChoicePacket(
         RebirthChoice.setAppearance(player, appearance);
         RebirthChoice.setClan(player, clan);
         RebirthChoice.setAge(player, RebirthChoice.Age.byId(packet.age()));
-        // The name follows the age (kit / paw / warrior suffix); anything the
-        // player left empty or invalid is filled in randomly.
         CatName.assign(player, packet.namePrefix(), packet.nameSuffix());
         RebirthChoice.markChosen(player);
 
         if (isColour(packet.peltColor())) {
             PeltData.setPeltColor(player, packet.peltColor());
         }
-        // Unknown or empty means a solid coat.
         PeltData.setPattern(player, packet.pattern());
         if (isColour(packet.leftEyeColor())) {
             EyeData.setLeftPupilColor(player, packet.leftEyeColor());
@@ -115,15 +100,11 @@ public record RebirthChoicePacket(
             EyeData.setScleraColor(player, packet.scleraColor());
         }
 
-        // End the intro session first: this restores invulnerability and marks
-        // the player as having seen the cutscene.
         IntroCutsceneHandler.finish(player);
 
-        // Health, speed and size now follow the age that was just chosen.
         CatPlayerHandler.applyCatStats(player);
 
         if (mode == RebirthChoice.Mode.REALISTIC) {
-            // The land is about to exist: the clan layout is final from here on.
             if (player.getServer() != null) {
                 ClanConfigManager.lock(player.getServer());
             }
@@ -141,7 +122,6 @@ public record RebirthChoicePacket(
             }
         }
 
-        // The teleport creates a fresh client entity; resend cosmetics after it.
         MinecraftServer server = player.getServer();
         if (server != null) {
             server.execute(() -> {

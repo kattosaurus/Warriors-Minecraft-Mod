@@ -1,10 +1,3 @@
-// Save this class in your mod and generate all required imports
-
-/**
- * Made with Blockbench 5.2.2
- * Exported for Minecraft version 1.19 or later with Mojang mappings
- * @author Author
- */
 public class catAnimation {
 	public static final AnimationDefinition walk = AnimationDefinition.Builder.withLength(1.0F).looping()
 		.addAnimation("head", new AnimationChannel(AnimationChannel.Targets.POSITION, 

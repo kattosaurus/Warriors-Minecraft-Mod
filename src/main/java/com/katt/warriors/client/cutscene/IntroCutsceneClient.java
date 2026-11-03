@@ -5,13 +5,8 @@ import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/**
- * Client-side glue: opens the cutscene screen when the server asks, waiting for
- * the world to finish loading if necessary.
- */
 public final class IntroCutsceneClient {
 
-    /** How long to wait for other GUI screens (loading terrain etc.) to close. */
     private static final int MAX_WAIT_TICKS = 100;
 
     private static boolean pending;
@@ -19,12 +14,10 @@ public final class IntroCutsceneClient {
 
     public IntroCutsceneClient() {}
 
-    /** Called from {@code StartIntroPacket#handle} on the client thread. */
     public static void requestStart() {
         Minecraft mc = Minecraft.getInstance();
 
         if (mc.screen instanceof IntroCutsceneScreen) {
-            // Already playing (e.g. a replay was requested twice).
             pending = false;
             return;
         }

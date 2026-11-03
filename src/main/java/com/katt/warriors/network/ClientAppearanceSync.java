@@ -15,14 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Client-side receiver for {@link SyncAppearancePacket}.
- *
- * <p>The packet is written into the same persistent-data compound the renderer
- * already reads from, so the rest of the rendering code needs no changes.
- * Packets that arrive before the target entity exists (login / respawn races)
- * are parked in {@link #PENDING} and flushed on the next render pass.</p>
- */
 @OnlyIn(Dist.CLIENT)
 public final class ClientAppearanceSync {
 
@@ -40,7 +32,6 @@ public final class ClientAppearanceSync {
         applyTo(player, packet);
     }
 
-    /** Applies a parked packet once the entity is available. Safe to call often. */
     public static void flushIfPending(Player player) {
         SyncAppearancePacket packet = PENDING.remove(player.getUUID());
         if (packet != null) {
@@ -79,14 +70,12 @@ public final class ClientAppearanceSync {
             data.putString(EyeData.NBT_RIGHT_PUPIL_COLOR, packet.rightPupilColor());
         }
 
-        // Pelt tint: an empty string means "use the plain coat texture".
         if (packet.peltColor().isEmpty()) {
             data.remove(PeltData.NBT_PELT_COLOR);
         } else {
             data.putString(PeltData.NBT_PELT_COLOR, packet.peltColor());
         }
 
-        // Pattern: an empty string means a solid coat.
         if (packet.pattern().isEmpty()) {
             data.remove(PeltData.NBT_PATTERN);
         } else {
@@ -97,7 +86,6 @@ public final class ClientAppearanceSync {
             data.putString(RebirthChoice.NBT_MODE, packet.mode());
         }
 
-        // Age changes the hitbox, so refresh it when it differs.
         if (!packet.age().isEmpty()) {
             RebirthChoice.Age before = RebirthChoice.getAge(player);
             data.putString(RebirthChoice.NBT_AGE, packet.age());
@@ -106,7 +94,6 @@ public final class ClientAppearanceSync {
             }
         }
 
-        // Warrior name: shown above the head and in chat.
         String nameBefore = CatName.full(player);
         if (packet.namePrefix().isEmpty() || packet.nameSuffix().isEmpty()) {
             data.remove(CatName.NBT_PREFIX);

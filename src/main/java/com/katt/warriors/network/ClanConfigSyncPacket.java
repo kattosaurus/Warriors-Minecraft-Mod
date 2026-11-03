@@ -10,7 +10,6 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/** Server → client: the world's clan layout and whether this player may change it. */
 public record ClanConfigSyncPacket(ClanConfig config, boolean canEdit) {
 
     public void encode(FriendlyByteBuf buf) {
@@ -24,7 +23,6 @@ public record ClanConfigSyncPacket(ClanConfig config, boolean canEdit) {
 
     public static void handle(ClanConfigSyncPacket packet, Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
-        // Keep the client classes out of the dedicated-server class loader.
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
                 ClientClanConfig.set(packet.config(), packet.canEdit()));
         ctx.setPacketHandled(true);

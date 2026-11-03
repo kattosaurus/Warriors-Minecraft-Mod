@@ -8,10 +8,6 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
-/**
- * Network channel used to push cosmetic data (cat coat + eye customisation)
- * from the server to clients, because Forge persistent data is not synced.
- */
 public final class WarriorsNetwork {
 
     private static final String PROTOCOL_VERSION = "6";
@@ -26,7 +22,6 @@ public final class WarriorsNetwork {
 
     private WarriorsNetwork() {}
 
-    /** Called once during common setup. */
     public static void register() {
         CHANNEL.messageBuilder(SyncAppearancePacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(SyncAppearancePacket::encode)
@@ -65,17 +60,12 @@ public final class WarriorsNetwork {
                 .add();
     }
 
-    /**
-     * Sends the player's appearance to everyone who can see them (including the
-     * player themselves, so the local hand/eye renderer updates immediately).
-     */
     public static void syncAppearance(ServerPlayer player) {
         CHANNEL.send(
                 PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
                 SyncAppearancePacket.fromPlayer(player));
     }
 
-    /** Sends the appearance of {@code tracked} to a single viewer. */
     public static void syncAppearanceTo(ServerPlayer tracked, ServerPlayer viewer) {
         CHANNEL.send(
                 PacketDistributor.PLAYER.with(() -> viewer),
