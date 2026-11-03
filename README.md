@@ -2,15 +2,15 @@
 
 <h1>Warriors: Minecraft Mod</h1>
 
-<img src="/src/main/resources/pack.png" alt="Warriors logo" width="90%">
+<img src="https://raw.githubusercontent.com/kattosaurus/Warriors-Minecraft-Mod/refs/heads/master/src/main/resources/pack.png" alt="Warriors logo" width="90%">
 
 <br>
 
-<a href="Hmmm how lovely its a placeholder"><img alt="CurseForge" height="56" src="/gallery/curseforge_vector.svg"></a>
-<a href="Hmmm how lovely its a placeholder"><img alt="Modrinth" height="56" src="/gallery/modrinth_vector.svg"></a>
-<a href="https://discord.gg/4UdpkQVMHw"><img alt="Discord" height="56" src="/gallery/discord-custom_vector.svg"></a>
-<a href="https://github.com/kattosaurus/Warriors-Minecraft-Mod"><img alt="GitHub" height="56" src="/gallery/github_vector.svg"></a>
-<a href="https://files.minecraftforge.net/"><img alt="Forge" height="56" src="/gallery/forge_vector.svg"></a>
+<a href="Hmmm how lovely its a placeholder"><img alt="CurseForge" height="56" src="https://raw.githubusercontent.com/kattosaurus/Warriors-Minecraft-Mod/refs/heads/master/gallery/curseforge_vector.svg"></a>
+<a href="Hmmm how lovely its a placeholder"><img alt="Modrinth" height="56" src="https://raw.githubusercontent.com/kattosaurus/Warriors-Minecraft-Mod/refs/heads/master/gallery/modrinth_vector.svg"></a>
+<a href="https://discord.gg/4UdpkQVMHw"><img alt="Discord" height="56" src="https://raw.githubusercontent.com/kattosaurus/Warriors-Minecraft-Mod/refs/heads/master/gallery/discord-custom_vector.svg"></a>
+<a href="https://github.com/kattosaurus/Warriors-Minecraft-Mod"><img alt="GitHub" height="56" src="https://raw.githubusercontent.com/kattosaurus/Warriors-Minecraft-Mod/refs/heads/master/gallery/github_vector.svg"></a>
+<a href="https://files.minecraftforge.net/"><img alt="Forge" height="56" src="https://raw.githubusercontent.com/kattosaurus/Warriors-Minecraft-Mod/refs/heads/master/gallery/forge_vector.svg"></a>
 
 </div>
 
