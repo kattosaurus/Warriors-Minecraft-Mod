@@ -1,0 +1,23 @@
+{
+  "type": "warriors:clanlands",
+  "generator": {
+    "type": "warriors:clanlands",
+    "biome_source": {
+      "biomes": [
+        "minecraft:flower_forest",
+        "minecraft:forest",
+        "minecraft:dark_forest",
+        "minecraft:meadow",
+        "minecraft:cherry_grove",
+        "minecraft:plains",
+        "minecraft:forest",
+        "minecraft:taiga",
+        "minecraft:forest",
+        "minecraft:river",
+        "minecraft:windswept_forest",
+        "minecraft:desert",
+        "minecraft:snowy_taiga"
+      ]
+    }
+  }
+}
