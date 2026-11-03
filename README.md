@@ -6,10 +6,10 @@
 
 <br>
 
-<a href="CURSEFORGE_LINK_HERE"><img alt="CurseForge" height="56" src="/gallery/curseforge_vector.svg"></a>
-<a href="MODRINTH_LINK_HERE"><img alt="Modrinth" height="56" src="/gallery/modrinth_vector.svg"></a>
+<a href="Hmmm how lovely its a placeholder"><img alt="CurseForge" height="56" src="/gallery/curseforge_vector.svg"></a>
+<a href="Hmmm how lovely its a placeholder"><img alt="Modrinth" height="56" src="/gallery/modrinth_vector.svg"></a>
 <a href="https://discord.gg/4UdpkQVMHw"><img alt="Discord" height="56" src="/gallery/discord-custom_vector.svg"></a>
-<a href="GITHUB_LINK_HERE"><img alt="GitHub" height="56" src="/gallery/github_vector.svg"></a>
+<a href="https://github.com/kattosaurus/Warriors-Minecraft-Mod"><img alt="GitHub" height="56" src="/gallery/github_vector.svg"></a>
 <a href="https://files.minecraftforge.net/"><img alt="Forge" height="56" src="/gallery/forge_vector.svg"></a>
 
 </div>
